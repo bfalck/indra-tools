@@ -36,28 +36,28 @@ Written by Bridget Falck, 2018
 """
 
 
-import numpy as N
+import numpy as np
 
 
 def readheader(f):
 
-    if N.fromfile(f,N.int32,1) != 256:
+    if np.fromfile(f,np.int32,1) != 256:
         return None
     header={}
         
-    npall = N.fromfile(f,N.int32,6) # DM only simulations - other np's and masses are 0
+    npall = np.fromfile(f,np.int32,6) # DM only simulations - other np's and masses are 0
     header['np_file'] = npall[1] # number of particles in this file (needed to read positions)
-    massall = N.fromfile(f,N.float64,6)
-    header['mass'] = massall[1]
-    header['time'],header['redshift'] = N.fromfile(f,N.float64,2)
-    header['flag_sfr'],header['flag_feedback'] = N.fromfile(f,N.int32,2)
-    nptotal = N.fromfile(f,N.int32,6)
+    massall = np.fromfile(f,np.float64,6)
+    header['mass'] = massall[1]*1.e10 # now in units of Msun/h
+    header['time'],header['redshift'] = np.fromfile(f,np.float64,2)
+    header['flag_sfr'],header['flag_feedback'] = np.fromfile(f,np.int32,2)
+    nptotal = np.fromfile(f,np.int32,6)
     header['npart'] = nptotal[1]
-    header['flag_cooling'],header['num_files'] = N.fromfile(f,N.int32,2)
-    header['BoxSize'],header['omega0'],header['omegaL'],header['hubble'] = N.fromfile(f,N.float64,4)
-    header['flag_stellarage'],header['flag_metals'],header['hashtabsize'] = N.fromfile(f,N.int32,3)
+    header['flag_cooling'],header['num_files'] = np.fromfile(f,np.int32,2)
+    header['BoxSize'],header['omega0'],header['omegaL'],header['hubble'] = np.fromfile(f,np.float64,4)
+    header['flag_stellarage'],header['flag_metals'],header['hashtabsize'] = np.fromfile(f,np.int32,3)
     # read rest of header_size + 2 filler integers:
-    empty = N.fromfile(f,N.int32,23)
+    empty = np.fromfile(f,np.int32,23)
     return header
 
 def getheader(X,Y,Z,snapnum,datadir=None):
@@ -75,19 +75,19 @@ def getheader(X,Y,Z,snapnum,datadir=None):
 
 def readpos(f,npfile):
     
-    thispos = N.fromfile(f,N.float32,3*npfile)
-    thispos = N.reshape(thispos, [npfile, 3])
+    thispos = np.fromfile(f,np.float32,3*npfile)
+    thispos = np.reshape(thispos, [npfile, 3])
     
     return thispos
 
 def readsnap(f,npfile):
     
     thispos = readpos(f,npfile)
-    empty = N.fromfile(f,N.int32,2)
-    thisvel = N.fromfile(f,N.float32,3*npfile)
-    thisvel = N.reshape(thisvel, [npfile, 3])
-    empty = N.fromfile(f,N.int32,2)
-    thisID = N.fromfile(f,N.int64,npfile)
+    empty = np.fromfile(f,np.int32,2)
+    thisvel = np.fromfile(f,np.float32,3*npfile)
+    thisvel = np.reshape(thisvel, [npfile, 3])
+    empty = np.fromfile(f,np.int32,2)
+    thisID = np.fromfile(f,np.int64,npfile)
     
     return thispos,thisvel,thisID
 
@@ -102,9 +102,9 @@ def getpos(X,Y,Z,snapnum,datadir=None):
     nparticles = 1024
     
     # loop through files
-    pos = N.empty((nparticles**3,3),N.float32)
+    pos = np.empty((nparticles**3,3),np.float32)
     istart = 0
-    for i in N.arange(0,NTask):
+    for i in np.arange(0,NTask):
         f = open(filename+str(i),'rb')
         
         header = readheader(f)
@@ -128,11 +128,11 @@ def getparticles(X,Y,Z,snapnum,datadir=None,sort=False):
     nparticles = 1024
 
     # loop through files
-    pos = N.empty((nparticles**3,3),N.float32)
-    vel = N.empty((nparticles**3,3),N.float32)
-    ids = N.empty((nparticles**3),N.int64)
+    pos = np.empty((nparticles**3,3),np.float32)
+    vel = np.empty((nparticles**3,3),np.float32)
+    ids = np.empty((nparticles**3),np.int64)
     istart = 0
-    for i in N.arange(0,NTask):
+    for i in np.arange(0,NTask):
         f = open(filename+str(i),'rb')
         header = readheader(f)
         thispos,thisvel,thisID = readsnap(f,header['np_file'])
@@ -142,15 +142,15 @@ def getparticles(X,Y,Z,snapnum,datadir=None,sort=False):
         
         if sort:
             pos[thisID] = thispos
-            vel[thisID] = thisvel
+            vel[thisID] = thisvel*np.sqrt(header['time'])
         else:
             pos[istart:(istart+header['np_file']),:] = thispos
-            vel[istart:(istart+header['np_file']),:] = thisvel
+            vel[istart:(istart+header['np_file']),:] = thisvel*np.sqrt(header['time'])
             ids[istart:(istart+header['np_file'])] = thisID
     
         istart = istart + header['np_file']
         
-    if sort: ids = N.arange(header['npart'])
+    if sort: ids = np.arange(header['npart'])
 
     return pos,vel,ids
 
@@ -167,7 +167,7 @@ def getfofheader(X,Y,Z,snapnum,datadir=None):
     tabfile = datadir+'snapdir_'+sn+'/group_tab_'+sn+'.'
 
     f = open(tabfile+str(0),'rb')
-    Ngroups, Nids, TotNgroups, NTask = N.fromfile(f, N.int32, 4)
+    Ngroups, Nids, TotNgroups, NTask = np.fromfile(f, np.int32, 4)
     f.close()
     
     return TotNgroups,NTask
@@ -185,18 +185,18 @@ def getfof(X,Y,Z,snapnum,datadir=None):
     # Don't read if no groups...
     if TotNgroups == 0: return 0,0
     else:
-        groupLen = N.zeros(TotNgroups,dtype=N.int32)
-        groupOffset = N.zeros(TotNgroups,dtype=N.int32)
+        groupLen = np.zeros(TotNgroups,dtype=np.int32)
+        groupOffset = np.zeros(TotNgroups,dtype=np.int32)
 
         istartGroup = 0
         istartIDs = 0
-        for i in N.arange(0,NTask):
+        for i in np.arange(0,NTask):
             f = open(tabfile+str(i), 'rb')
     
-            Ngroups, Nids, TotNgroups, NTask = N.fromfile(f, N.int32, 4)
+            Ngroups, Nids, TotNgroups, NTask = np.fromfile(f, np.int32, 4)
             if Ngroups > 0:
-                locLen = N.fromfile(f,N.int32,Ngroups)
-                locOffset = N.fromfile(f,N.int32,Ngroups)
+                locLen = np.fromfile(f,np.int32,Ngroups)
+                locOffset = np.fromfile(f,np.int32,Ngroups)
                 groupLen[istartGroup:(istartGroup+Ngroups)] = locLen
                 groupOffset[istartGroup:(istartGroup+Ngroups)] = locOffset+istartIDs
                 istartGroup += Ngroups
@@ -220,18 +220,18 @@ def getfofids(X,Y,Z,snapnum,datadir=None):
     if TotNgroups == 0: return 0,0
     else:
         groupLen,groupOffset = getfof(X,Y,Z,snapnum,datadir)
-        TotNids = N.sum(groupLen,dtype=N.int64)
-        groupids = N.zeros(TotNids,dtype=N.int64)
+        TotNids = np.sum(groupLen,dtype=np.int64)
+        groupids = np.zeros(TotNids,dtype=np.int64)
 
         istart = 0
-        for i in N.arange(0,NTask):
+        for i in np.arange(0,NTask):
             f = open(idsfile+str(i),'rb')
 
-            Ngroups, Nids, TotNgroups, NTask = N.fromfile(f, N.int32, 4)
+            Ngroups, Nids, TotNgroups, NTask = np.fromfile(f, np.int32, 4)
             if Nids > 0:
-                locIDs = N.fromfile(f,N.int64,Nids)
+                locIDs = np.fromfile(f,np.int64,Nids)
                 # bitshift to remove the hash table info from the IDs
-                groupids[istart:(istart+Nids)] = N.bitwise_and(locIDs[:], (N.int64(1)<<34) - 1)
+                groupids[istart:(istart+Nids)] = np.bitwise_and(locIDs[:], (np.int64(1)<<34) - 1)
                 istart += Nids
 #            else: print('No groups in file %d' % i)
             f.close()
@@ -247,12 +247,12 @@ def getsubheader(X,Y,Z,snapnum,datadir=None):
 
     TotNsubs = 0
     f = open(tabfile+str(0),'rb')
-    Ngroups,Nids,TotNgroups,NTask = N.fromfile(f,N.int32,4)
+    Ngroups,Nids,TotNgroups,NTask = np.fromfile(f,np.int32,4)
     f.close()
-    for i in N.arange(0,NTask):
+    for i in np.arange(0,NTask):
         f = open(tabfile+str(i),'rb')
 #        print('opening file '+tabfile+str(i))
-        Ngroups, Nids, TotNgroups, NTask, Nsubs = N.fromfile(f, N.int32, 5)
+        Ngroups, Nids, TotNgroups, NTask, Nsubs = np.fromfile(f, np.int32, 5)
         TotNsubs += Nsubs
         f.close()
 
@@ -271,62 +271,62 @@ def getsubcat(X,Y,Z,snapnum,datadir=None):
     else:
         # Initialize data containers. Group into structured array?? Dict??
         catalog = {}
-        catalog['NsubPerHalo'] = N.zeros(TotNgroups,dtype=N.int32)
-        catalog['FirstSubOfHalo'] = N.zeros(TotNgroups,dtype=N.int32) # file specific!
+        catalog['NsubPerHalo'] = np.zeros(TotNgroups,dtype=np.int32)
+        catalog['FirstSubOfHalo'] = np.zeros(TotNgroups,dtype=np.int32) # file specific!
     
-        catalog['subLen'] = N.zeros(TotNsubs,dtype=N.int32)
-        catalog['subOffset'] = N.zeros(TotNsubs,dtype=N.int32) # file specific!
-        catalog['subParentHalo'] = N.zeros(TotNsubs,dtype=N.int32) # file specific!
+        catalog['subLen'] = np.zeros(TotNsubs,dtype=np.int32)
+        catalog['subOffset'] = np.zeros(TotNsubs,dtype=np.int32) # file specific!
+        catalog['subParentHalo'] = np.zeros(TotNsubs,dtype=np.int32) # file specific!
     
-        catalog['M200mean'] = N.zeros(TotNgroups,dtype=N.float32)
-        catalog['R200mean'] = N.zeros(TotNgroups,dtype=N.float32)
-        catalog['M200crit'] = N.zeros(TotNgroups,dtype=N.float32)
-        catalog['R200crit'] = N.zeros(TotNgroups,dtype=N.float32)
-        catalog['M200tophat'] = N.zeros(TotNgroups,dtype=N.float32)
-        catalog['R200tophat'] = N.zeros(TotNgroups,dtype=N.float32)
+        catalog['M200mean'] = np.zeros(TotNgroups,dtype=np.float32)
+        catalog['R200mean'] = np.zeros(TotNgroups,dtype=np.float32)
+        catalog['M200crit'] = np.zeros(TotNgroups,dtype=np.float32)
+        catalog['R200crit'] = np.zeros(TotNgroups,dtype=np.float32)
+        catalog['M200tophat'] = np.zeros(TotNgroups,dtype=np.float32)
+        catalog['R200tophat'] = np.zeros(TotNgroups,dtype=np.float32)
     
-        catalog['SubPos'] = N.zeros((TotNsubs,3),dtype=N.float32)
-        catalog['SubVel'] = N.zeros((TotNsubs,3),dtype=N.float32)
-        catalog['SubVelDisp'] = N.zeros(TotNsubs,dtype=N.float32)
-        catalog['SubVmax'] = N.zeros(TotNsubs,dtype=N.float32)
-        catalog['SubSpin'] = N.zeros((TotNsubs,3),dtype=N.float32)
-        catalog['SubMostBoundID'] = N.zeros((TotNsubs,2),dtype=N.int32)
-        catalog['SubHalfMass'] = N.zeros(TotNsubs,dtype=N.float32)
+        catalog['SubPos'] = np.zeros((TotNsubs,3),dtype=np.float32)
+        catalog['SubVel'] = np.zeros((TotNsubs,3),dtype=np.float32)
+        catalog['SubVelDisp'] = np.zeros(TotNsubs,dtype=np.float32)
+        catalog['SubVmax'] = np.zeros(TotNsubs,dtype=np.float32)
+        catalog['SubSpin'] = np.zeros((TotNsubs,3),dtype=np.float32)
+        catalog['SubMostBoundID'] = np.zeros((TotNsubs,2),dtype=np.int32)
+        catalog['SubHalfMass'] = np.zeros(TotNsubs,dtype=np.float32)
         
         # loop over numfiles (NTask)
         istartSub = 0
         istartGroup = 0
         istartIDs = 0
-        for i in N.arange(0,NTask):
+        for i in np.arange(0,NTask):
             f = open(tabfile+str(i),'rb')
-            Ngroups, Nids, TotNgroups, NTask, Nsubs = N.fromfile(f, N.int32, 5)
+            Ngroups, Nids, TotNgroups, NTask, Nsubs = np.fromfile(f, np.int32, 5)
             
             if Nsubs > 0:
             # Read catalog: indexes need to include offset from previous files (istarts)
-                catalog['NsubPerHalo'][istartGroup:(istartGroup+Ngroups)] = N.fromfile(f,N.int32,Ngroups)
-                catalog['FirstSubOfHalo'][istartGroup:(istartGroup+Ngroups)] = N.fromfile(f,N.int32,Ngroups)+istartSub
+                catalog['NsubPerHalo'][istartGroup:(istartGroup+Ngroups)] = np.fromfile(f,np.int32,Ngroups)
+                catalog['FirstSubOfHalo'][istartGroup:(istartGroup+Ngroups)] = np.fromfile(f,np.int32,Ngroups)+istartSub
        
-                catalog['subLen'][istartSub:(istartSub+Nsubs)] = N.fromfile(f,N.int32,Nsubs)
-                catalog['subOffset'][istartSub:(istartSub+Nsubs)] = N.fromfile(f,N.int32,Nsubs)+istartIDs
-                catalog['subParentHalo'][istartSub:(istartSub+Nsubs)] = N.fromfile(f,N.int32,Nsubs)+istartGroup
+                catalog['subLen'][istartSub:(istartSub+Nsubs)] = np.fromfile(f,np.int32,Nsubs)
+                catalog['subOffset'][istartSub:(istartSub+Nsubs)] = np.fromfile(f,np.int32,Nsubs)+istartIDs
+                catalog['subParentHalo'][istartSub:(istartSub+Nsubs)] = np.fromfile(f,np.int32,Nsubs)+istartGroup
                 
-                catalog['M200mean'][istartGroup:(istartGroup+Ngroups)] = N.fromfile(f,N.float32,Ngroups)
-                catalog['R200mean'][istartGroup:(istartGroup+Ngroups)] = N.fromfile(f,N.float32,Ngroups)
-                catalog['M200crit'][istartGroup:(istartGroup+Ngroups)] = N.fromfile(f,N.float32,Ngroups)
-                catalog['R200crit'][istartGroup:(istartGroup+Ngroups)] = N.fromfile(f,N.float32,Ngroups)
-                catalog['M200tophat'][istartGroup:(istartGroup+Ngroups)] = N.fromfile(f,N.float32,Ngroups)
-                catalog['R200tophat'][istartGroup:(istartGroup+Ngroups)] = N.fromfile(f,N.float32,Ngroups)
+                catalog['M200mean'][istartGroup:(istartGroup+Ngroups)] = np.fromfile(f,np.float32,Ngroups)*1.e10
+                catalog['R200mean'][istartGroup:(istartGroup+Ngroups)] = np.fromfile(f,np.float32,Ngroups)
+                catalog['M200crit'][istartGroup:(istartGroup+Ngroups)] = np.fromfile(f,np.float32,Ngroups)*1.e10
+                catalog['R200crit'][istartGroup:(istartGroup+Ngroups)] = np.fromfile(f,np.float32,Ngroups)
+                catalog['M200tophat'][istartGroup:(istartGroup+Ngroups)] = np.fromfile(f,np.float32,Ngroups)*1.e10
+                catalog['R200tophat'][istartGroup:(istartGroup+Ngroups)] = np.fromfile(f,np.float32,Ngroups)
 
-                thisxyz = N.fromfile(f,N.float32,3*Nsubs)
-                catalog['SubPos'][istartSub:(istartSub+Nsubs),:] = N.reshape(thisxyz,[Nsubs,3])
-                thisxyz = N.fromfile(f,N.float32,3*Nsubs)
-                catalog['SubVel'][istartSub:(istartSub+Nsubs),:] = N.reshape(thisxyz,[Nsubs,3])
-                catalog['SubVelDisp'][istartSub:(istartSub+Nsubs)] = N.fromfile(f,N.float32,Nsubs)
-                catalog['SubVmax'][istartSub:(istartSub+Nsubs)] = N.fromfile(f,N.float32,Nsubs)
-                thisxyz = N.fromfile(f,N.float32,3*Nsubs)
-                catalog['SubSpin'][istartSub:(istartSub+Nsubs),:] = N.reshape(thisxyz,[Nsubs,3])
-                catalog['SubMostBoundID'][istartSub:(istartSub+Nsubs),:] = N.reshape(N.fromfile(f,N.int32,2*Nsubs),[Nsubs,2])
-                catalog['SubHalfMass'][istartSub:(istartSub+Nsubs)] = N.fromfile(f,N.float32,Nsubs)
+                thisxyz = np.fromfile(f,np.float32,3*Nsubs)
+                catalog['SubPos'][istartSub:(istartSub+Nsubs),:] = np.reshape(thisxyz,[Nsubs,3])
+                thisxyz = np.fromfile(f,np.float32,3*Nsubs)
+                catalog['SubVel'][istartSub:(istartSub+Nsubs),:] = np.reshape(thisxyz,[Nsubs,3])
+                catalog['SubVelDisp'][istartSub:(istartSub+Nsubs)] = np.fromfile(f,np.float32,Nsubs)
+                catalog['SubVmax'][istartSub:(istartSub+Nsubs)] = np.fromfile(f,np.float32,Nsubs)
+                thisxyz = np.fromfile(f,np.float32,3*Nsubs)
+                catalog['SubSpin'][istartSub:(istartSub+Nsubs),:] = np.reshape(thisxyz,[Nsubs,3])
+                catalog['SubMostBoundID'][istartSub:(istartSub+Nsubs),:] = np.reshape(np.fromfile(f,np.int32,2*Nsubs),[Nsubs,2])
+                catalog['SubHalfMass'][istartSub:(istartSub+Nsubs)] = np.fromfile(f,np.float32,Nsubs)
 
                 istartSub += Nsubs
                 istartGroup += Ngroups
@@ -349,23 +349,23 @@ def getsubids(X,Y,Z,snapnum,datadir=None):
     else:
         TotSubids = 0
         # Get total number of IDs (including unbound particle IDs)
-        for i in N.arange(0,NTask):
+        for i in np.arange(0,NTask):
             f = open(idsfile+str(i),'rb')
-            Ngroups, Nids, TotNgroups, NTask = N.fromfile(f, N.int32, 4)
+            Ngroups, Nids, TotNgroups, NTask = np.fromfile(f, np.int32, 4)
             TotSubids += Nids
             f.close()
-        subids = N.zeros(TotSubids,dtype=N.int64)
+        subids = np.zeros(TotSubids,dtype=np.int64)
         
         # loop through numfiles (NTask)
         istart = 0
-        for i in N.arange(0,NTask):
+        for i in np.arange(0,NTask):
             f = open(idsfile+str(i),'rb')
 
-            Ngroups, Nids, TotNgroups, NTask = N.fromfile(f, N.int32, 4)
+            Ngroups, Nids, TotNgroups, NTask = np.fromfile(f, np.int32, 4)
             if Nids > 0:
-                locIDs = N.fromfile(f,N.int64,Nids)
+                locIDs = np.fromfile(f,np.int64,Nids)
                 # bitshift to remove the hash table info from the IDs
-                subids[istart:(istart+Nids)] = N.bitwise_and(locIDs[:], (N.int64(1)<<34) - 1)
+                subids[istart:(istart+Nids)] = np.bitwise_and(locIDs[:], (np.int64(1)<<34) - 1)
                 istart = istart + Nids
             f.close()
 
@@ -389,20 +389,20 @@ def getfft(X,Y,Z,tnum,datadir=None):
     L2 = L//2
 
     f = open(filename,'rb')
-    time = N.fromfile(f,N.float64,1)
-    nsize = N.fromfile(f,N.int32,1)
-    fft_re = N.fromfile(f,N.float32,nsize[0])
-    fft_im = N.fromfile(f,N.float32,nsize[0])
+    time = np.fromfile(f,np.float64,1)
+    nsize = np.fromfile(f,np.int32,1)
+    fft_re = np.fromfile(f,np.float32,nsize[0])
+    fft_im = np.fromfile(f,np.float32,nsize[0])
     f.close()
 
-    fft_re = N.reshape(fft_re,[L+1,L+1,L2+1])
-    fft_im = N.reshape(fft_im,[L+1,L+1,L2+1])
+    fft_re = np.reshape(fft_re,[L+1,L+1,L2+1])
+    fft_im = np.reshape(fft_im,[L+1,L+1,L2+1])
     #print 'a = %f' % time[0]
 
     return fft_re,fft_im,time[0]
 
 def getkvals(L=None):
-    # define k's that correspond to fourier modes: (2*N.pi/boxsize)*N.array(x,y,z)
+    # define k's that correspond to fourier modes: (2*np.pi/boxsize)*np.array(x,y,z)
     # x = [-L/2:L/2], y = [-L/2,L/2], z = [0,L/2]
     # L defaults to 128, as in FFT_DATA output
     
@@ -410,10 +410,10 @@ def getkvals(L=None):
     L2 = L//2
     boxsize = 1000.
 
-    kx = N.atleast_3d(N.expand_dims(N.arange(-L2,L2+1),axis=1))
-    ky = N.atleast_3d(N.expand_dims(N.arange(-L2,L2+1),axis=0))
-    kz = N.expand_dims(N.expand_dims(N.arange(0,L2+1),axis=0),axis=0)
-    kx = N.broadcast_to(kx,(L+1,L+1,L2+1))*N.pi*2/boxsize
-    ky = N.broadcast_to(ky,(L+1,L+1,L2+1))*N.pi*2/boxsize
-    kz = N.broadcast_to(kz,(L+1,L+1,L2+1))*N.pi*2/boxsize
+    kx = np.atleast_3d(np.expand_dims(np.arange(-L2,L2+1),axis=1))
+    ky = np.atleast_3d(np.expand_dims(np.arange(-L2,L2+1),axis=0))
+    kz = np.expand_dims(np.expand_dims(np.arange(0,L2+1),axis=0),axis=0)
+    kx = np.broadcast_to(kx,(L+1,L+1,L2+1))*np.pi*2/boxsize
+    ky = np.broadcast_to(ky,(L+1,L+1,L2+1))*np.pi*2/boxsize
+    kz = np.broadcast_to(kz,(L+1,L+1,L2+1))*np.pi*2/boxsize
     return kx,ky,kz
