@@ -164,7 +164,7 @@ def getfofheader(X,Y,Z,snapnum,datadir=None):
     if (datadir == None): datadir = '/datascope/indra%s/%s_%s_%s/'%(str(X),str(X),str(Y),str(Z))
 
     sn = "%03d" % snapnum
-    tabfile = datadir+'snapdir_'+sn+'/group_tab_'+sn+'.'
+    tabfile = datadir+'/snapdir_'+sn+'/group_tab_'+sn+'.'
 
     f = open(tabfile+str(0),'rb')
     Ngroups, Nids, TotNgroups, NTask = np.fromfile(f, np.int32, 4)
@@ -177,7 +177,7 @@ def getfof(X,Y,Z,snapnum,datadir=None):
     if (datadir == None): datadir = '/datascope/indra%s/%s_%s_%s/'%(str(X),str(X),str(Y),str(Z))
 
     sn = "%03d" % snapnum
-    tabfile = datadir+'snapdir_'+sn+'/group_tab_'+sn+'.'
+    tabfile = datadir+'/snapdir_'+sn+'/group_tab_'+sn+'.'
 
     # loop through NTask files (could read NTask from header...)
 #    NTask = 256
@@ -211,7 +211,7 @@ def getfofids(X,Y,Z,snapnum,datadir=None):
     if (datadir == None): datadir = '/datascope/indra%s/%s_%s_%s/'%(str(X),str(X),str(Y),str(Z))
 
     sn = "%03d" % snapnum
-    idsfile = datadir+'snapdir_'+sn+'/group_ids_'+sn+'.'
+    idsfile = datadir+'/snapdir_'+sn+'/group_ids_'+sn+'.'
  
     # loop through NTask files
 #    NTask = 256
@@ -243,7 +243,7 @@ def getsubheader(X,Y,Z,snapnum,datadir=None):
     if (datadir == None): datadir = '/datascope/indra%s/%s_%s_%s/'%(str(X),str(X),str(Y),str(Z))
 
     sn = "%03d" % snapnum
-    tabfile = datadir+'postproc_'+sn+'/sub_tab_'+sn+'.'
+    tabfile = datadir+'/postproc_'+sn+'/sub_tab_'+sn+'.'
 
     TotNsubs = 0
     f = open(tabfile+str(0),'rb')
@@ -263,7 +263,7 @@ def getsubcat(X,Y,Z,snapnum,datadir=None):
     if (datadir == None): datadir = '/datascope/indra%s/%s_%s_%s/'%(str(X),str(X),str(Y),str(Z))
 
     sn = "%03d" % snapnum
-    tabfile = datadir+'postproc_'+sn+'/sub_tab_'+sn+'.'
+    tabfile = datadir+'/postproc_'+sn+'/sub_tab_'+sn+'.'
     
     TotNgroups,NTask= getfofheader(X,Y,Z,snapnum,datadir)
     TotNsubs,NTask = getsubheader(X,Y,Z,snapnum,datadir)
@@ -342,7 +342,7 @@ def getsubids(X,Y,Z,snapnum,datadir=None):
     if (datadir == None): datadir = '/datascope/indra%s/%s_%s_%s/'%(str(X),str(X),str(Y),str(Z))
 
     sn = "%03d" % snapnum
-    idsfile = datadir+'postproc_'+sn+'/sub_ids_'+sn+'.'
+    idsfile = datadir+'/postproc_'+sn+'/sub_ids_'+sn+'.'
     
     TotNsubs,NTask = getsubheader(X,Y,Z,snapnum,datadir)
     if TotNsubs == 0: return None
@@ -383,7 +383,7 @@ def getfft(X,Y,Z,tnum,datadir=None):
     if (datadir == None): datadir = '/datascope/indra%s/%s_%s_%s/'%(str(X),str(X),str(Y),str(Z))
     
     tstr = "%03d" % tnum
-    filename = datadir+'FFT_DATA/FFT_128_%s.dat' % tstr  
+    filename = datadir+'/FFT_DATA/FFT_128_%s.dat' % tstr  
 
     L = 128
     L2 = L//2
