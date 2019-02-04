@@ -269,7 +269,7 @@ def getsubcat(X,Y,Z,snapnum,datadir=None):
     TotNsubs,NTask = getsubheader(X,Y,Z,snapnum,datadir)
     if TotNsubs == 0: return None
     else:
-        # Initialize data containers. Group into structured array?? Dict??
+        # Initialize data containers
         catalog = {}
         catalog['NsubPerHalo'] = np.zeros(TotNgroups,dtype=np.int32)
         catalog['FirstSubOfHalo'] = np.zeros(TotNgroups,dtype=np.int32) # file specific!
@@ -290,7 +290,7 @@ def getsubcat(X,Y,Z,snapnum,datadir=None):
         catalog['SubVelDisp'] = np.zeros(TotNsubs,dtype=np.float32)
         catalog['SubVmax'] = np.zeros(TotNsubs,dtype=np.float32)
         catalog['SubSpin'] = np.zeros((TotNsubs,3),dtype=np.float32)
-        catalog['SubMostBoundID'] = np.zeros((TotNsubs,2),dtype=np.int32)
+        catalog['SubMostBoundID'] = np.zeros(TotNsubs,dtype=np.int64)
         catalog['SubHalfMass'] = np.zeros(TotNsubs,dtype=np.float32)
         
         # loop over numfiles (NTask)
@@ -325,7 +325,7 @@ def getsubcat(X,Y,Z,snapnum,datadir=None):
                 catalog['SubVmax'][istartSub:(istartSub+Nsubs)] = np.fromfile(f,np.float32,Nsubs)
                 thisxyz = np.fromfile(f,np.float32,3*Nsubs)
                 catalog['SubSpin'][istartSub:(istartSub+Nsubs),:] = np.reshape(thisxyz,[Nsubs,3])
-                catalog['SubMostBoundID'][istartSub:(istartSub+Nsubs),:] = np.reshape(np.fromfile(f,np.int32,2*Nsubs),[Nsubs,2])
+                catalog['SubMostBoundID'][istartSub:(istartSub+Nsubs)] = np.fromfile(f,np.int64,Nsubs)
                 catalog['SubHalfMass'][istartSub:(istartSub+Nsubs)] = np.fromfile(f,np.float32,Nsubs)
 
                 istartSub += Nsubs
