@@ -1,9 +1,10 @@
 """
-Indra reading functions using NumPy, tested in both Python 2 and Python 3
+Indra reading functions using NumPy, tested in Python 3
 
 Inputs: 
 - X, Y, and Z specify the Indra run, and are ignored if a datadir is specified
-- datadir defaults to /datascope/indraX/X_Y_Z/
+- datadir defaults to the FileDB location of run X_Y_Z. If datadir is not set and datascope=True,
+    the datadir will be the datascope location of run X_Y_Z, e.g. /datascope/indraX/X_Y_Z/
 - snapnum goes from 0 to 63
 - tnum goes from 0 to 504 for the FFT data
 
@@ -11,32 +12,48 @@ Usage:
 
 --- Snapshots ---
 
-header = getheader(X,Y,Z,snapnum,datadir=datadir)
-pos = getpos(X,Y,Z,snapnum,datadir=datadir)
-pos, vel, ids = getparticles(X,Y,Z,snapnum,datadir=datadir,sort=False)
+header = getheader(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False)
+pos = getpos(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False)
+pos, vel, ids = getparticles(X,Y,Z,snapnum,datadir=None,datascope=False,sort=False,verbose=False)
 
 --- Halo and subhalo data ---
 
-TotNgroups, NTask = getfofheader(X,Y,Z,snapnum,datadir=datadir)
-TotNsubs, NTask = getsubheader(X,Y,Z,snapnum,datadir=datadir)
-groupLen, groupOffset = getfof(X,Y,Z,snapnum,datadir=None)
-groupLen, groupOffset, groupids = getfofids(X,Y,Z,snapnum,datadir=None)
-catalog = getsubcat(X,Y,Z,snapnum,datadir=datadir) # dictionary contains subLen and subOffset
-subids = getsubids(X,Y,Z,snapnum,datadir=datadir)
+TotNgroups, NTask = getfofheader(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False)
+TotNsubs, NTask = getsubheader(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False)
+groupLen, groupOffset = getfof(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False)
+groupLen, groupOffset, groupids = getfofids(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False)
+catalog = getsubcat(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False) # dictionary contains subLen and subOffset
+subids = getsubids(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False)
 
 --- FFT data ---
 
-fft_re, fft_im, a = getfft(X,Y,Z,tnum,datadir=datadir)
+fft_re, fft_im, a = getfft(X,Y,Z,tnum,datadir=None,datascope=False,verbose=False)
 kx, ky, kz = getkvals(L=128) # These are not read from file but are built and have the same shapes as fft_re and fft_im
 
 
 
-Written by Bridget Falck, 2018
+Written by Bridget Falck, 2018-2019
 
 """
 
 
 import numpy as np
+
+
+def get_loc(X,Y,Z):
+# Helper function to find location of run X_Y_Z on the FileDB data volumes
+# A list of all 512 locations are given by: [get_loc(i//64,i//8 % 8,i % 8) for i in range(512)]
+    # First get list of filedb locations: start with 08-01
+    fd = []
+    for f in range(8,13):
+        for d in range(1,4):
+            fd.append('/home/idies/workspace/indra_filedb/data{:02d}_{:02d}/'.format(f,d))
+    for f in range(1,8):
+        for d in range(1,4):
+            fd.append('/home/idies/workspace/indra_filedb/data{:02d}_{:02d}/'.format(f,d))
+
+    run_num = 64*X+8*Y+Z
+    return fd[run_num % 36]+'{}_{}_{}/'.format(X,Y,Z)
 
 
 def readheader(f):
@@ -60,9 +77,18 @@ def readheader(f):
     empty = np.fromfile(f,np.int32,23)
     return header
 
-def getheader(X,Y,Z,snapnum,datadir=None):
 
-    if (datadir == None): datadir = '/datascope/indra%s/%s_%s_%s/'%(str(X),str(X),str(Y),str(Z))
+def getheader(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False):
+
+    if (datadir == None): 
+        if (datascope == True): datadir = '/datascope/indra{0}/{0}_{1}_{2}/'.format(X,Y,Z)
+        else:
+            datadir = get_loc(X,Y,Z)
+            if ('data02_03' in datadir): # ** Keep these on /sciserver/vc/indra/ for now **
+                if (verbose == True): print('The FileDB node 02-03 is currently down. Reading from /sciserver/vc/')
+                datadir = '/home/idies/workspace/indra/{}_{}_{}/'.format(X,Y,Z)
+#                return None
+    if (verbose == True): print('Reading from {}'.format(datadir))
 
     sn = "%03d" % snapnum
     filename = datadir+'/snapdir_'+sn+'/snapshot_'+sn+'.'
@@ -91,9 +117,17 @@ def readsnap(f,npfile):
     
     return thispos,thisvel,thisID
 
-def getpos(X,Y,Z,snapnum,datadir=None):
+def getpos(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False):
     
-    if (datadir == None): datadir = '/datascope/indra%s/%s_%s_%s/'%(str(X),str(X),str(Y),str(Z))
+    if (datadir == None): 
+        if (datascope == True): datadir = '/datascope/indra{0}/{0}_{1}_{2}/'.format(X,Y,Z)
+        else:
+            datadir = get_loc(X,Y,Z)
+            if ('data02_03' in datadir): # ** Keep these on /sciserver/vc/indra/ for now **
+                if (verbose == True): print('The FileDB node 02-03 is currently down. Reading from /sciserver/vc/')
+                datadir = '/home/idies/workspace/indra/{}_{}_{}/'.format(X,Y,Z)
+#                return None
+    if (verbose == True): print('Reading from {}'.format(datadir))
     
     sn = "%03d" % snapnum
     filename = datadir+'/snapdir_'+sn+'/snapshot_'+sn+'.'
@@ -117,10 +151,18 @@ def getpos(X,Y,Z,snapnum,datadir=None):
 
     return pos
 
-def getparticles(X,Y,Z,snapnum,datadir=None,sort=False):
+def getparticles(X,Y,Z,snapnum,datadir=None,datascope=False,sort=False,verbose=False):
     
-    if (datadir == None): datadir = '/datascope/indra%s/%s_%s_%s/'%(str(X),str(X),str(Y),str(Z))
-
+    if (datadir == None): 
+        if (datascope == True): datadir = '/datascope/indra{0}/{0}_{1}_{2}/'.format(X,Y,Z)
+        else:
+            datadir = get_loc(X,Y,Z)
+            if ('data02_03' in datadir): # ** Keep these on /sciserver/vc/indra/ for now **
+                if (verbose == True): print('The FileDB node 02-03 is currently down. Reading from /sciserver/vc/')
+                datadir = '/home/idies/workspace/indra/{}_{}_{}/'.format(X,Y,Z)
+#                return None
+    if (verbose == True): print('Reading from {}'.format(datadir))
+    
     sn = "%03d" % snapnum
     filename = datadir+'/snapdir_'+sn+'/snapshot_'+sn+'.'
 
@@ -159,9 +201,17 @@ def getparticles(X,Y,Z,snapnum,datadir=None,sort=False):
 Halo and subhalo functions
 """
 
-def getfofheader(X,Y,Z,snapnum,datadir=None):
+def getfofheader(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False):
     
-    if (datadir == None): datadir = '/datascope/indra%s/%s_%s_%s/'%(str(X),str(X),str(Y),str(Z))
+    if (datadir == None): 
+        if (datascope == True): datadir = '/datascope/indra{0}/{0}_{1}_{2}/'.format(X,Y,Z)
+        else:
+            datadir = get_loc(X,Y,Z)
+            if ('data02_03' in datadir): # ** Keep these on /sciserver/vc/indra/ for now **
+                if (verbose == True): print('The FileDB node 02-03 is currently down. Reading from /sciserver/vc/')
+                datadir = '/home/idies/workspace/indra/{}_{}_{}/'.format(X,Y,Z)
+#                return None
+    if (verbose == True): print('Reading from {}'.format(datadir))
 
     sn = "%03d" % snapnum
     tabfile = datadir+'/snapdir_'+sn+'/group_tab_'+sn+'.'
@@ -172,10 +222,18 @@ def getfofheader(X,Y,Z,snapnum,datadir=None):
     
     return TotNgroups,NTask
 
-def getfof(X,Y,Z,snapnum,datadir=None):
+def getfof(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False):
     
-    if (datadir == None): datadir = '/datascope/indra%s/%s_%s_%s/'%(str(X),str(X),str(Y),str(Z))
-
+    if (datadir == None): 
+        if (datascope == True): datadir = '/datascope/indra{0}/{0}_{1}_{2}/'.format(X,Y,Z)
+        else:
+            datadir = get_loc(X,Y,Z)
+            if ('data02_03' in datadir): # ** Keep these on /sciserver/vc/indra/ for now **
+                if (verbose == True): print('The FileDB node 02-03 is currently down. Reading from /sciserver/vc/')
+                datadir = '/home/idies/workspace/indra/{}_{}_{}/'.format(X,Y,Z)
+#                return None
+    if (verbose == True): print('Reading from {}'.format(datadir))
+    
     sn = "%03d" % snapnum
     tabfile = datadir+'/snapdir_'+sn+'/group_tab_'+sn+'.'
 
@@ -206,10 +264,18 @@ def getfof(X,Y,Z,snapnum,datadir=None):
     
     return groupLen,groupOffset
 
-def getfofids(X,Y,Z,snapnum,datadir=None):
+def getfofids(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False):
 
-    if (datadir == None): datadir = '/datascope/indra%s/%s_%s_%s/'%(str(X),str(X),str(Y),str(Z))
-
+    if (datadir == None): 
+        if (datascope == True): datadir = '/datascope/indra{0}/{0}_{1}_{2}/'.format(X,Y,Z)
+        else:
+            datadir = get_loc(X,Y,Z)
+            if ('data02_03' in datadir): # ** Keep these on /sciserver/vc/indra/ for now **
+                if (verbose == True): print('The FileDB node 02-03 is currently down. Reading from /sciserver/vc/')
+                datadir = '/home/idies/workspace/indra/{}_{}_{}/'.format(X,Y,Z)
+#                return None
+    if (verbose == True): print('Reading from {}'.format(datadir))
+    
     sn = "%03d" % snapnum
     idsfile = datadir+'/snapdir_'+sn+'/group_ids_'+sn+'.'
  
@@ -238,10 +304,18 @@ def getfofids(X,Y,Z,snapnum,datadir=None):
     
     return groupLen,groupOffset,groupids-1
 
-def getsubheader(X,Y,Z,snapnum,datadir=None):
+def getsubheader(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False):
 
-    if (datadir == None): datadir = '/datascope/indra%s/%s_%s_%s/'%(str(X),str(X),str(Y),str(Z))
-
+    if (datadir == None): 
+        if (datascope == True): datadir = '/datascope/indra{0}/{0}_{1}_{2}/'.format(X,Y,Z)
+        else:
+            datadir = get_loc(X,Y,Z)
+            if ('data02_03' in datadir): # ** Keep these on /sciserver/vc/indra/ for now **
+                if (verbose == True): print('The FileDB node 02-03 is currently down. Reading from /sciserver/vc/')
+                datadir = '/home/idies/workspace/indra/{}_{}_{}/'.format(X,Y,Z)
+#                return None
+    if (verbose == True): print('Reading from {}'.format(datadir))
+    
     sn = "%03d" % snapnum
     tabfile = datadir+'/postproc_'+sn+'/sub_tab_'+sn+'.'
 
@@ -258,10 +332,18 @@ def getsubheader(X,Y,Z,snapnum,datadir=None):
 
     return TotNsubs,NTask
 
-def getsubcat(X,Y,Z,snapnum,datadir=None):
+def getsubcat(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False):
     
-    if (datadir == None): datadir = '/datascope/indra%s/%s_%s_%s/'%(str(X),str(X),str(Y),str(Z))
-
+    if (datadir == None): 
+        if (datascope == True): datadir = '/datascope/indra{0}/{0}_{1}_{2}/'.format(X,Y,Z)
+        else:
+            datadir = get_loc(X,Y,Z)
+            if ('data02_03' in datadir): # ** Keep these on /sciserver/vc/indra/ for now **
+                if (verbose == True): print('The FileDB node 02-03 is currently down. Reading from /sciserver/vc/')
+                datadir = '/home/idies/workspace/indra/{}_{}_{}/'.format(X,Y,Z)
+#                return None
+#    print('Reading from {}'.format(datadir))
+    
     sn = "%03d" % snapnum
     tabfile = datadir+'/postproc_'+sn+'/sub_tab_'+sn+'.'
     
@@ -337,10 +419,18 @@ def getsubcat(X,Y,Z,snapnum,datadir=None):
     return catalog
 
 
-def getsubids(X,Y,Z,snapnum,datadir=None):
+def getsubids(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False):
     
-    if (datadir == None): datadir = '/datascope/indra%s/%s_%s_%s/'%(str(X),str(X),str(Y),str(Z))
-
+    if (datadir == None): 
+        if (datascope == True): datadir = '/datascope/indra{0}/{0}_{1}_{2}/'.format(X,Y,Z)
+        else:
+            datadir = get_loc(X,Y,Z)
+            if ('data02_03' in datadir): # ** Keep these on /sciserver/vc/indra/ for now **
+                if (verbose == True): print('The FileDB node 02-03 is currently down. Reading from /sciserver/vc/')
+                datadir = '/home/idies/workspace/indra/{}_{}_{}/'.format(X,Y,Z)
+#                return None
+    if (verbose == True): print('Reading from {}'.format(datadir))
+    
     sn = "%03d" % snapnum
     idsfile = datadir+'/postproc_'+sn+'/sub_ids_'+sn+'.'
     
@@ -377,10 +467,18 @@ FFT functions:
 fft_re,fft_im,kx,ky,kz are all arrays of the same shape: (129,129,65)
 """
 
-def getfft(X,Y,Z,tnum,datadir=None):
+def getfft(X,Y,Z,tnum,datadir=None,datascope=False,verbose=False):
     # Read FFT data in given time slice (0 to 504)
     
-    if (datadir == None): datadir = '/datascope/indra%s/%s_%s_%s/'%(str(X),str(X),str(Y),str(Z))
+    if (datadir == None): 
+        if (datascope == True): datadir = '/datascope/indra{0}/{0}_{1}_{2}/'.format(X,Y,Z)
+        else:
+            datadir = get_loc(X,Y,Z)
+            if ('data02_03' in datadir): # ** Keep these on /sciserver/vc/indra/ for now **
+                if (verbose == True): print('The FileDB node 02-03 is currently down. Reading from /sciserver/vc/')
+                datadir = '/home/idies/workspace/indra/{}_{}_{}/'.format(X,Y,Z)
+#                return None
+    if (verbose == True): print('Reading from {}'.format(datadir))
     
     tstr = "%03d" % tnum
     filename = datadir+'/FFT_DATA/FFT_128_%s.dat' % tstr  

@@ -1,3 +1,4 @@
+from .read_indra import get_loc
 from .read_indra import getheader
 from .read_indra import getpos
 from .read_indra import getparticles
