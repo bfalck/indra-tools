@@ -84,10 +84,7 @@ def getheader(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False):
         if (datascope == True): datadir = '/datascope/indra{0}/{0}_{1}_{2}/'.format(X,Y,Z)
         else:
             datadir = get_loc(X,Y,Z)
-            if ('data02_03' in datadir): # ** Keep these on /sciserver/vc/indra/ for now **
-                if (verbose == True): print('The FileDB node 02-03 is currently down. Reading from /sciserver/vc/')
-                datadir = '/home/idies/workspace/indra/{}_{}_{}/'.format(X,Y,Z)
-#                return None
+
     if (verbose == True): print('Reading from {}'.format(datadir))
 
     sn = "%03d" % snapnum
@@ -123,10 +120,7 @@ def getpos(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False):
         if (datascope == True): datadir = '/datascope/indra{0}/{0}_{1}_{2}/'.format(X,Y,Z)
         else:
             datadir = get_loc(X,Y,Z)
-            if ('data02_03' in datadir): # ** Keep these on /sciserver/vc/indra/ for now **
-                if (verbose == True): print('The FileDB node 02-03 is currently down. Reading from /sciserver/vc/')
-                datadir = '/home/idies/workspace/indra/{}_{}_{}/'.format(X,Y,Z)
-#                return None
+
     if (verbose == True): print('Reading from {}'.format(datadir))
     
     sn = "%03d" % snapnum
@@ -157,10 +151,7 @@ def getparticles(X,Y,Z,snapnum,datadir=None,datascope=False,sort=False,verbose=F
         if (datascope == True): datadir = '/datascope/indra{0}/{0}_{1}_{2}/'.format(X,Y,Z)
         else:
             datadir = get_loc(X,Y,Z)
-            if ('data02_03' in datadir): # ** Keep these on /sciserver/vc/indra/ for now **
-                if (verbose == True): print('The FileDB node 02-03 is currently down. Reading from /sciserver/vc/')
-                datadir = '/home/idies/workspace/indra/{}_{}_{}/'.format(X,Y,Z)
-#                return None
+
     if (verbose == True): print('Reading from {}'.format(datadir))
     
     sn = "%03d" % snapnum
@@ -207,10 +198,7 @@ def getfofheader(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False):
         if (datascope == True): datadir = '/datascope/indra{0}/{0}_{1}_{2}/'.format(X,Y,Z)
         else:
             datadir = get_loc(X,Y,Z)
-            if ('data02_03' in datadir): # ** Keep these on /sciserver/vc/indra/ for now **
-                if (verbose == True): print('The FileDB node 02-03 is currently down. Reading from /sciserver/vc/')
-                datadir = '/home/idies/workspace/indra/{}_{}_{}/'.format(X,Y,Z)
-#                return None
+
     if (verbose == True): print('Reading from {}'.format(datadir))
 
     sn = "%03d" % snapnum
@@ -228,10 +216,7 @@ def getfof(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False):
         if (datascope == True): datadir = '/datascope/indra{0}/{0}_{1}_{2}/'.format(X,Y,Z)
         else:
             datadir = get_loc(X,Y,Z)
-            if ('data02_03' in datadir): # ** Keep these on /sciserver/vc/indra/ for now **
-                if (verbose == True): print('The FileDB node 02-03 is currently down. Reading from /sciserver/vc/')
-                datadir = '/home/idies/workspace/indra/{}_{}_{}/'.format(X,Y,Z)
-#                return None
+
     if (verbose == True): print('Reading from {}'.format(datadir))
     
     sn = "%03d" % snapnum
@@ -270,10 +255,7 @@ def getfofids(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False):
         if (datascope == True): datadir = '/datascope/indra{0}/{0}_{1}_{2}/'.format(X,Y,Z)
         else:
             datadir = get_loc(X,Y,Z)
-            if ('data02_03' in datadir): # ** Keep these on /sciserver/vc/indra/ for now **
-                if (verbose == True): print('The FileDB node 02-03 is currently down. Reading from /sciserver/vc/')
-                datadir = '/home/idies/workspace/indra/{}_{}_{}/'.format(X,Y,Z)
-#                return None
+
     if (verbose == True): print('Reading from {}'.format(datadir))
     
     sn = "%03d" % snapnum
@@ -310,10 +292,7 @@ def getsubheader(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False):
         if (datascope == True): datadir = '/datascope/indra{0}/{0}_{1}_{2}/'.format(X,Y,Z)
         else:
             datadir = get_loc(X,Y,Z)
-            if ('data02_03' in datadir): # ** Keep these on /sciserver/vc/indra/ for now **
-                if (verbose == True): print('The FileDB node 02-03 is currently down. Reading from /sciserver/vc/')
-                datadir = '/home/idies/workspace/indra/{}_{}_{}/'.format(X,Y,Z)
-#                return None
+
     if (verbose == True): print('Reading from {}'.format(datadir))
     
     sn = "%03d" % snapnum
@@ -338,10 +317,7 @@ def getsubcat(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False):
         if (datascope == True): datadir = '/datascope/indra{0}/{0}_{1}_{2}/'.format(X,Y,Z)
         else:
             datadir = get_loc(X,Y,Z)
-            if ('data02_03' in datadir): # ** Keep these on /sciserver/vc/indra/ for now **
-                if (verbose == True): print('The FileDB node 02-03 is currently down. Reading from /sciserver/vc/')
-                datadir = '/home/idies/workspace/indra/{}_{}_{}/'.format(X,Y,Z)
-#                return None
+
 #    print('Reading from {}'.format(datadir))
     
     sn = "%03d" % snapnum
@@ -425,10 +401,7 @@ def getsubids(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False):
         if (datascope == True): datadir = '/datascope/indra{0}/{0}_{1}_{2}/'.format(X,Y,Z)
         else:
             datadir = get_loc(X,Y,Z)
-            if ('data02_03' in datadir): # ** Keep these on /sciserver/vc/indra/ for now **
-                if (verbose == True): print('The FileDB node 02-03 is currently down. Reading from /sciserver/vc/')
-                datadir = '/home/idies/workspace/indra/{}_{}_{}/'.format(X,Y,Z)
-#                return None
+
     if (verbose == True): print('Reading from {}'.format(datadir))
     
     sn = "%03d" % snapnum
@@ -474,10 +447,7 @@ def getfft(X,Y,Z,tnum,datadir=None,datascope=False,verbose=False):
         if (datascope == True): datadir = '/datascope/indra{0}/{0}_{1}_{2}/'.format(X,Y,Z)
         else:
             datadir = get_loc(X,Y,Z)
-            if ('data02_03' in datadir): # ** Keep these on /sciserver/vc/indra/ for now **
-                if (verbose == True): print('The FileDB node 02-03 is currently down. Reading from /sciserver/vc/')
-                datadir = '/home/idies/workspace/indra/{}_{}_{}/'.format(X,Y,Z)
-#                return None
+
     if (verbose == True): print('Reading from {}'.format(datadir))
     
     tstr = "%03d" % tnum
