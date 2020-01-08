@@ -1,8 +1,12 @@
 """
 Indra reading functions using NumPy, tested in Python 3
 
+
+BIG CHANGE: switching to runid (int or tuple) from X,Y,Z function parameters will break all current reading code! How to document this to the ~5 current users? For now, wait until merging to master.
+
+
 Inputs: 
-- X, Y, and Z specify the Indra run, and are ignored if a datadir is specified
+- runid specifies the Indra run, and is ignored if a datadir is specified; it is either an integer from 0 to 511 or a tuple containing (X,Y,Z)
 - datadir defaults to the FileDB location of run X_Y_Z. If datadir is not set and datascope=True,
     the datadir will be the datascope location of run X_Y_Z, e.g. /datascope/indraX/X_Y_Z/
 - snapnum goes from 0 to 63
@@ -12,22 +16,22 @@ Usage:
 
 --- Snapshots ---
 
-header = getheader(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False)
-pos = getpos(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False)
-pos, vel, ids = getparticles(X,Y,Z,snapnum,datadir=None,datascope=False,sort=False,verbose=False)
+header = getheader(runid,snapnum,datadir=None,datascope=False,verbose=False)
+pos = getpos(runid,snapnum,datadir=None,datascope=False,verbose=False)
+pos, vel, ids = getparticles(runid,snapnum,datadir=None,datascope=False,sort=False,verbose=False)
 
 --- Halo and subhalo data ---
 
-TotNgroups, NTask = getfofheader(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False)
-TotNsubs, NTask = getsubheader(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False)
-groupLen, groupOffset = getfof(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False)
-groupLen, groupOffset, groupids = getfofids(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False)
-catalog = getsubcat(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False) # dictionary contains subLen and subOffset
-subids = getsubids(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False)
+TotNgroups, NTask = getfofheader(runid,snapnum,datadir=None,datascope=False,verbose=False)
+TotNsubs, NTask = getsubheader(runid,snapnum,datadir=None,datascope=False,verbose=False)
+groupLen, groupOffset = getfof(runid,snapnum,datadir=None,datascope=False,verbose=False)
+groupLen, groupOffset, groupids = getfofids(runid,snapnum,datadir=None,datascope=False,verbose=False)
+catalog = getsubcat(runid,snapnum,datadir=None,datascope=False,verbose=False) # dictionary contains subLen and subOffset
+subids = getsubids(runid,snapnum,datadir=None,datascope=False,verbose=False)
 
 --- FFT data ---
 
-fft_re, fft_im, a = getfft(X,Y,Z,tnum,datadir=None,datascope=False,verbose=False)
+fft_re, fft_im, a = getfft(runid,tnum,datadir=None,datascope=False,verbose=False)
 kx, ky, kz = getkvals(L=128) # These are not read from file but are built and have the same shapes as fft_re and fft_im
 
 
@@ -40,10 +44,23 @@ Written by Bridget Falck, 2018-2019
 import numpy as np
 
 
-def get_loc(X,Y,Z):
+class Run:
+    def __init__(self, runid):
+        if isinstance(runid, int):
+            self.num = runid
+            self.X, self.Y, self.Z = np.unravel_index(runid,(8,8,8))
+        elif isinstance(runid, tuple):
+            self.X, self.Y, self.Z = runid
+            self.num = np.ravel_multi_index(runid,(8,8,8))
+
+
+def get_loc(runid):
 # Helper function to find location of run X_Y_Z on the FileDB data volumes
-# A list of all 512 locations are given by: [get_loc(i//64,i//8 % 8,i % 8) for i in range(512)]
-    # First get list of filedb locations: start with 08-01
+# A list of all 512 locations are given by: [get_loc(i) for i in range(512)]
+
+    run = Run(runid)
+
+    # Get list of filedb locations: start with 08-01
     fd = []
     for f in range(8,13):
         for d in range(1,4):
@@ -52,8 +69,7 @@ def get_loc(X,Y,Z):
         for d in range(1,4):
             fd.append('/home/idies/workspace/indra_filedb/data{:02d}_{:02d}/'.format(f,d))
 
-    run_num = 64*X+8*Y+Z
-    return fd[run_num % 36]+'{}_{}_{}/'.format(X,Y,Z)
+    return fd[run.num % 36]+'{}_{}_{}/'.format(run.X,run.Y,run.Z)
 
 
 def readheader(f):
@@ -78,12 +94,14 @@ def readheader(f):
     return header
 
 
-def getheader(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False):
+def getheader(runid,snapnum,datadir=None,datascope=False,verbose=False):
+
+    run = Run(runid)
 
     if (datadir == None): 
-        if (datascope == True): datadir = '/datascope/indra{0}/{0}_{1}_{2}/'.format(X,Y,Z)
+        if (datascope == True): datadir = '/datascope/indra{0}/{0}_{1}_{2}/'.format(run.X,run.Y,run.Z)
         else:
-            datadir = get_loc(X,Y,Z)
+            datadir = get_loc(runid)
 
     if (verbose == True): print('Reading from {}'.format(datadir))
 
@@ -114,12 +132,14 @@ def readsnap(f,npfile):
     
     return thispos,thisvel,thisID
 
-def getpos(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False):
+def getpos(runid,snapnum,datadir=None,datascope=False,verbose=False):
     
+    run = Run(runid)
+
     if (datadir == None): 
-        if (datascope == True): datadir = '/datascope/indra{0}/{0}_{1}_{2}/'.format(X,Y,Z)
+        if (datascope == True): datadir = '/datascope/indra{0}/{0}_{1}_{2}/'.format(run.X,run.Y,run.Z)
         else:
-            datadir = get_loc(X,Y,Z)
+            datadir = get_loc(runid)
 
     if (verbose == True): print('Reading from {}'.format(datadir))
     
@@ -145,12 +165,14 @@ def getpos(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False):
 
     return pos
 
-def getparticles(X,Y,Z,snapnum,datadir=None,datascope=False,sort=False,verbose=False):
+def getparticles(runid,snapnum,datadir=None,datascope=False,sort=False,verbose=False):
     
+    run = Run(runid)
+
     if (datadir == None): 
-        if (datascope == True): datadir = '/datascope/indra{0}/{0}_{1}_{2}/'.format(X,Y,Z)
+        if (datascope == True): datadir = '/datascope/indra{0}/{0}_{1}_{2}/'.format(run.X,run.Y,run.Z)
         else:
-            datadir = get_loc(X,Y,Z)
+            datadir = get_loc(runid)
 
     if (verbose == True): print('Reading from {}'.format(datadir))
     
@@ -192,12 +214,14 @@ def getparticles(X,Y,Z,snapnum,datadir=None,datascope=False,sort=False,verbose=F
 Halo and subhalo functions
 """
 
-def getfofheader(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False):
+def getfofheader(runid,snapnum,datadir=None,datascope=False,verbose=False):
     
+    run = Run(runid)
+
     if (datadir == None): 
-        if (datascope == True): datadir = '/datascope/indra{0}/{0}_{1}_{2}/'.format(X,Y,Z)
+        if (datascope == True): datadir = '/datascope/indra{0}/{0}_{1}_{2}/'.format(run.X,run.Y,run.Z)
         else:
-            datadir = get_loc(X,Y,Z)
+            datadir = get_loc(runid)
 
     if (verbose == True): print('Reading from {}'.format(datadir))
 
@@ -210,12 +234,14 @@ def getfofheader(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False):
     
     return TotNgroups,NTask
 
-def getfof(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False):
+def getfof(runid,snapnum,datadir=None,datascope=False,verbose=False):
     
+    run = Run(runid)
+
     if (datadir == None): 
-        if (datascope == True): datadir = '/datascope/indra{0}/{0}_{1}_{2}/'.format(X,Y,Z)
+        if (datascope == True): datadir = '/datascope/indra{0}/{0}_{1}_{2}/'.format(run.X,run.Y,run.Z)
         else:
-            datadir = get_loc(X,Y,Z)
+            datadir = get_loc(runid)
 
     if (verbose == True): print('Reading from {}'.format(datadir))
     
@@ -224,7 +250,7 @@ def getfof(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False):
 
     # loop through NTask files (could read NTask from header...)
 #    NTask = 256
-    TotNgroups,NTask = getfofheader(X,Y,Z,snapnum,datadir)
+    TotNgroups,NTask = getfofheader(runid,snapnum,datadir)
     # Don't read if no groups...
     if TotNgroups == 0: return 0,0
     else:
@@ -249,12 +275,14 @@ def getfof(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False):
     
     return groupLen,groupOffset
 
-def getfofids(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False):
+def getfofids(runid,snapnum,datadir=None,datascope=False,verbose=False):
+
+    run = Run(runid)
 
     if (datadir == None): 
-        if (datascope == True): datadir = '/datascope/indra{0}/{0}_{1}_{2}/'.format(X,Y,Z)
+        if (datascope == True): datadir = '/datascope/indra{0}/{0}_{1}_{2}/'.format(run.X,run.Y,run.Z)
         else:
-            datadir = get_loc(X,Y,Z)
+            datadir = get_loc(runid)
 
     if (verbose == True): print('Reading from {}'.format(datadir))
     
@@ -263,11 +291,11 @@ def getfofids(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False):
  
     # loop through NTask files
 #    NTask = 256
-    TotNgroups,NTask = getfofheader(X,Y,Z,snapnum,datadir)
+    TotNgroups,NTask = getfofheader(runid,snapnum,datadir)
     # Don't read if no groups...
     if TotNgroups == 0: return 0,0
     else:
-        groupLen,groupOffset = getfof(X,Y,Z,snapnum,datadir)
+        groupLen,groupOffset = getfof(runid,snapnum,datadir)
         TotNids = np.sum(groupLen,dtype=np.int64)
         groupids = np.zeros(TotNids,dtype=np.int64)
 
@@ -286,12 +314,14 @@ def getfofids(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False):
     
     return groupLen,groupOffset,groupids-1
 
-def getsubheader(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False):
+def getsubheader(runid,snapnum,datadir=None,datascope=False,verbose=False):
+
+    run = Run(runid)
 
     if (datadir == None): 
-        if (datascope == True): datadir = '/datascope/indra{0}/{0}_{1}_{2}/'.format(X,Y,Z)
+        if (datascope == True): datadir = '/datascope/indra{0}/{0}_{1}_{2}/'.format(run.X,run.Y,run.Z)
         else:
-            datadir = get_loc(X,Y,Z)
+            datadir = get_loc(runid)
 
     if (verbose == True): print('Reading from {}'.format(datadir))
     
@@ -311,20 +341,22 @@ def getsubheader(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False):
 
     return TotNsubs,NTask
 
-def getsubcat(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False):
+def getsubcat(runid,snapnum,datadir=None,datascope=False,verbose=False):
     
+    run = Run(runid)
+
     if (datadir == None): 
-        if (datascope == True): datadir = '/datascope/indra{0}/{0}_{1}_{2}/'.format(X,Y,Z)
+        if (datascope == True): datadir = '/datascope/indra{0}/{0}_{1}_{2}/'.format(run.X,run.Y,run.Z)
         else:
-            datadir = get_loc(X,Y,Z)
+            datadir = get_loc(runid)
 
 #    print('Reading from {}'.format(datadir))
     
     sn = "%03d" % snapnum
     tabfile = datadir+'/postproc_'+sn+'/sub_tab_'+sn+'.'
     
-    TotNgroups,NTask= getfofheader(X,Y,Z,snapnum,datadir)
-    TotNsubs,NTask = getsubheader(X,Y,Z,snapnum,datadir)
+    TotNgroups,NTask= getfofheader(runid,snapnum,datadir)
+    TotNsubs,NTask = getsubheader(runid,snapnum,datadir)
     if TotNsubs == 0: return None
     else:
         # Initialize data containers
@@ -395,19 +427,21 @@ def getsubcat(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False):
     return catalog
 
 
-def getsubids(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False):
+def getsubids(runid,snapnum,datadir=None,datascope=False,verbose=False):
     
+    run = Run(runid)
+
     if (datadir == None): 
-        if (datascope == True): datadir = '/datascope/indra{0}/{0}_{1}_{2}/'.format(X,Y,Z)
+        if (datascope == True): datadir = '/datascope/indra{0}/{0}_{1}_{2}/'.format(run.X,run.Y,run.Z)
         else:
-            datadir = get_loc(X,Y,Z)
+            datadir = get_loc(runid)
 
     if (verbose == True): print('Reading from {}'.format(datadir))
     
     sn = "%03d" % snapnum
     idsfile = datadir+'/postproc_'+sn+'/sub_ids_'+sn+'.'
     
-    TotNsubs,NTask = getsubheader(X,Y,Z,snapnum,datadir)
+    TotNsubs,NTask = getsubheader(runid,snapnum,datadir)
     if TotNsubs == 0: return None
     else:
         TotSubids = 0
@@ -440,13 +474,15 @@ FFT functions:
 fft_re,fft_im,kx,ky,kz are all arrays of the same shape: (129,129,65)
 """
 
-def getfft(X,Y,Z,tnum,datadir=None,datascope=False,verbose=False):
+def getfft(runid,tnum,datadir=None,datascope=False,verbose=False):
     # Read FFT data in given time slice (0 to 504)
     
+    run = Run(runid)
+
     if (datadir == None): 
-        if (datascope == True): datadir = '/datascope/indra{0}/{0}_{1}_{2}/'.format(X,Y,Z)
+        if (datascope == True): datadir = '/datascope/indra{0}/{0}_{1}_{2}/'.format(run.X,run.Y,run.Z)
         else:
-            datadir = get_loc(X,Y,Z)
+            datadir = get_loc(runid)
 
     if (verbose == True): print('Reading from {}'.format(datadir))
     
