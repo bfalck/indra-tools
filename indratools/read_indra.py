@@ -1,42 +1,70 @@
 """
-Indra reading functions using NumPy, tested in Python 3
+Reading functions for the Indra suite of simulations hosted on the SciServer.
+
+Written by Bridget Falck, 2018-2019
 
 
-BIG CHANGE: switching to runid (int or tuple) from X,Y,Z function parameters will break all current reading code! How to document this to the ~5 current users? For now, wait until merging to master.
+Current branch bigchange: will break all reading code using previous version!
+
+
+TODO: add usage examples
+TODO: add docstrings for methods
+TODO: add/update error handling
 
 
 Inputs: 
-- runid specifies the Indra run, and is ignored if a datadir is specified; it is either an integer from 0 to 511 or a tuple containing (X,Y,Z)
-- datadir defaults to the FileDB location of run X_Y_Z. If datadir is not set and datascope=True,
-    the datadir will be the datascope location of run X_Y_Z, e.g. /datascope/indraX/X_Y_Z/
-- snapnum goes from 0 to 63
-- tnum goes from 0 to 504 for the FFT data
+- ``runid`` specifies the Indra run, and is ignored if a ``datadir`` is specified; 
+    it is either an integer from 0 to 511 or a tuple containing (``X``,``Y``,``Z``)
+- ``datadir`` defaults to the FileDB location of run X_Y_Z. If ``datadir`` is not 
+    set and ``datascope=True``, the ``datadir`` will be the datascope location of 
+    run X_Y_Z, e.g. /datascope/indraX/X_Y_Z/
+- ``snapnum`` goes from 0 to 63
+- ``tnum`` goes from 0 to 504 for the FFT data
 
-Usage:
+
+Methods
+-------
 
 --- Snapshots ---
 
-header = getheader(runid,snapnum,datadir=None,datascope=False,verbose=False)
-pos = getpos(runid,snapnum,datadir=None,datascope=False,verbose=False)
-pos, vel, ids = getparticles(runid,snapnum,datadir=None,datascope=False,sort=False,verbose=False)
+getheader(runid,snapnum,datadir=None,datascope=False,verbose=False)
+    Reads and returns a dictionary of header parameters.
+getpos(runid,snapnum,datadir=None,datascope=False,verbose=False)
+    Reads and returns an array of particle positions of shape [1024**3,3]
+    from one full snapshot.
+getparticles(runid,snapnum,datadir=None,datascope=False,sort=False,verbose=False)
+    Reads particle positions, velocities, and IDs: pos, vel, ids = getparticles(...).
+    pos and vel are arrays of shape [1024**3,3], and ids have shape [1024**3].
 
 --- Halo and subhalo data ---
 
-TotNgroups, NTask = getfofheader(runid,snapnum,datadir=None,datascope=False,verbose=False)
-TotNsubs, NTask = getsubheader(runid,snapnum,datadir=None,datascope=False,verbose=False)
-groupLen, groupOffset = getfof(runid,snapnum,datadir=None,datascope=False,verbose=False)
-groupLen, groupOffset, groupids = getfofids(runid,snapnum,datadir=None,datascope=False,verbose=False)
-catalog = getsubcat(runid,snapnum,datadir=None,datascope=False,verbose=False) # dictionary contains subLen and subOffset
-subids = getsubids(runid,snapnum,datadir=None,datascope=False,verbose=False)
+getfofheader(runid,snapnum,datadir=None,datascope=False,verbose=False)
+    Reads the header of the FOF data and returns the total number of FOF 
+    groups contained in all files at this snapshot.
+getsubheader(runid,snapnum,datadir=None,datascope=False,verbose=False)
+    Reads all headers of the SUBFIND files and returns the total number
+    of subhalos in all files at this snapshot.
+getfof(runid,snapnum,datadir=None,datascope=False,verbose=False)
+    Reads the number of particles in each FOF group and the Offset array needed to
+    index the IDs of the member particles: groupLen, groupOffset = getfof(...)
+getfofids(runid,snapnum,datadir=None,datascope=False,verbose=False)
+    Reads the groupLen, groupOffset, and particle ID arrays for the FOF groups.
+getsubcat(runid,snapnum,datadir=None,datascope=False,verbose=False)
+    Reads the SUBFIND subhalo catalogs and returns a dictionary of values. Some halo 
+    properties are defined for each FOF group, and some for each subhalo. The
+    dictionary contains the subLen and subOffset arrays needed to index the IDs
+    of the subhalo member particles (as for the FOF groups).
+getsubids(runid,snapnum,datadir=None,datascope=False,verbose=False)
+    Reads and returns the IDs of the particles in each subhalo.
 
 --- FFT data ---
 
-fft_re, fft_im, a = getfft(runid,tnum,datadir=None,datascope=False,verbose=False)
-kx, ky, kz = getkvals(L=128) # These are not read from file but are built and have the same shapes as fft_re and fft_im
-
-
-
-Written by Bridget Falck, 2018-2019
+getfft(runid,tnum,datadir=None,datascope=False,verbose=False)
+    Reads and returns the real and imaginary components of the Fourier-space density
+    grid at output ``tnum`` and returns the scalefactor of this ``tnum``.
+getkvals(L=128) 
+    Builds and returns the x, y, and z components of the k-vectors associated
+    with the FFT data. Each are arrays with the same shapes as ``fft_re`` and ``fft_im``.
 
 """
 
@@ -45,7 +73,34 @@ import numpy as np
 
 
 class Run:
+    """
+    Specifies the current Indra simulation as both a number (from 0 to 511) 
+    and 3 integers, X_Y_Z (each go from 0 to 7), corresponding to the 
+    raveled and unraveled indices of an 8x8x8 cube. Instantiated with either
+    the number or the 3 integers as a tuple.
+    
+    Attributes
+    ----------
+    num : int
+        The ID of the run as an integer, from 0 to 511
+    X : int
+        The first integer of run X_Y_Z, from 0 to 7
+    Y : int
+        The second integer of run X_Y_Z, from 0 to 7
+    Z : int
+        The third integer of run X_Y_Z, from 0 to 7
+
+    """
+
     def __init__(self, runid):
+        """
+        Parameters
+        ----------
+        runid : int or tuple
+            Specifies the Indra run either as an integer from 0 to 511
+            or as a length 3 tuple giving the 3-digit ID as (X,Y,Z)
+            where X, Y, and Z each go from 0 to 7.
+        """
         if isinstance(runid, int):
             self.num = runid
             self.X, self.Y, self.Z = np.unravel_index(runid,(8,8,8))
@@ -89,12 +144,36 @@ def readheader(f):
     header['flag_cooling'],header['num_files'] = np.fromfile(f,np.int32,2)
     header['BoxSize'],header['omega0'],header['omegaL'],header['hubble'] = np.fromfile(f,np.float64,4)
     header['flag_stellarage'],header['flag_metals'],header['hashtabsize'] = np.fromfile(f,np.int32,3)
-    # read rest of header_size + 2 filler integers:
+    # read rest of header_size + 2 filler integers (so next read can be particle positions):
     empty = np.fromfile(f,np.int32,23)
     return header
 
 
 def getheader(runid,snapnum,datadir=None,datascope=False,verbose=False):
+    """Description.....
+    
+    Parameters
+    ----------
+    runid : int or tuple
+        Specifies the Indra run either as an integer from 0 to 511
+        or as a length 3 tuple giving the 3-digit ID as (X,Y,Z)
+        where X, Y, and Z each go from 0 to 7.
+    snapnum : int
+        Which snapshot to read (0 to 63).
+    datadir : string, optional
+        If set, specify full path of directory containing simulation X_Y_Z.
+        Default is to read from the output of ``get_loc(runid)``.
+    datascope : boolean, optional
+        If True, read from /datascope/indraX/X_Y_Z/ (default False).
+        Overwritten if ``datascope`` is set.
+    verbose : boolean, optional
+        If True, print reading statements (default False).
+    
+    Returns
+    -------
+    header : dict
+        Dictionary object containing header information.
+    """
 
     run = Run(runid)
 
@@ -232,7 +311,7 @@ def getfofheader(runid,snapnum,datadir=None,datascope=False,verbose=False):
     Ngroups, Nids, TotNgroups, NTask = np.fromfile(f, np.int32, 4)
     f.close()
     
-    return TotNgroups,NTask
+    return TotNgroups
 
 def getfof(runid,snapnum,datadir=None,datascope=False,verbose=False):
     
@@ -248,9 +327,9 @@ def getfof(runid,snapnum,datadir=None,datascope=False,verbose=False):
     sn = "%03d" % snapnum
     tabfile = datadir+'/snapdir_'+sn+'/group_tab_'+sn+'.'
 
-    # loop through NTask files (could read NTask from header...)
-#    NTask = 256
-    TotNgroups,NTask = getfofheader(runid,snapnum,datadir)
+    # loop through NTask files
+    NTask = 256
+    TotNgroups = getfofheader(runid,snapnum,datadir)
     # Don't read if no groups...
     if TotNgroups == 0: return 0,0
     else:
@@ -290,8 +369,8 @@ def getfofids(runid,snapnum,datadir=None,datascope=False,verbose=False):
     idsfile = datadir+'/snapdir_'+sn+'/group_ids_'+sn+'.'
  
     # loop through NTask files
-#    NTask = 256
-    TotNgroups,NTask = getfofheader(runid,snapnum,datadir)
+    NTask = 256
+    TotNgroups = getfofheader(runid,snapnum,datadir)
     # Don't read if no groups...
     if TotNgroups == 0: return 0,0
     else:
@@ -339,7 +418,7 @@ def getsubheader(runid,snapnum,datadir=None,datascope=False,verbose=False):
         TotNsubs += Nsubs
         f.close()
 
-    return TotNsubs,NTask
+    return TotNsubs
 
 def getsubcat(runid,snapnum,datadir=None,datascope=False,verbose=False):
     
@@ -355,8 +434,9 @@ def getsubcat(runid,snapnum,datadir=None,datascope=False,verbose=False):
     sn = "%03d" % snapnum
     tabfile = datadir+'/postproc_'+sn+'/sub_tab_'+sn+'.'
     
-    TotNgroups,NTask= getfofheader(runid,snapnum,datadir)
-    TotNsubs,NTask = getsubheader(runid,snapnum,datadir)
+    NTask = 256
+    TotNgroups= getfofheader(runid,snapnum,datadir)
+    TotNsubs = getsubheader(runid,snapnum,datadir)
     if TotNsubs == 0: return None
     else:
         # Initialize data containers
@@ -441,7 +521,8 @@ def getsubids(runid,snapnum,datadir=None,datascope=False,verbose=False):
     sn = "%03d" % snapnum
     idsfile = datadir+'/postproc_'+sn+'/sub_ids_'+sn+'.'
     
-    TotNsubs,NTask = getsubheader(runid,snapnum,datadir)
+    NTask = 256
+    TotNsubs = getsubheader(runid,snapnum,datadir)
     if TotNsubs == 0: return None
     else:
         TotSubids = 0
@@ -505,12 +586,11 @@ def getfft(runid,tnum,datadir=None,datascope=False,verbose=False):
 
     return fft_re,fft_im,time[0]
 
-def getkvals(L=None):
+def getkvals(L=128):
     # define k's that correspond to fourier modes: (2*np.pi/boxsize)*np.array(x,y,z)
     # x = [-L/2:L/2], y = [-L/2,L/2], z = [0,L/2]
     # L defaults to 128, as in FFT_DATA output
     
-    if (L == None): L = 128
     L2 = L//2
     boxsize = 1000.
 
