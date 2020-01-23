@@ -1,38 +1,70 @@
 """
-Indra reading functions using NumPy, tested in Python 3
+Reading functions for the Indra suite of simulations hosted on the SciServer.
+
+Written by Bridget Falck, 2018-2019
+
+
+Current branch ``pre_runid`` preserves the old API where the Indra run had to 
+be specified by 3 X_Y_Z integers, corresponding to the raveled index of the 
+512 Indra simulations, in the function calls.
+
+
+TODO: add docstrings for methods
+
 
 Inputs: 
-- X, Y, and Z specify the Indra run, and are ignored if a datadir is specified
-- datadir defaults to the FileDB location of run X_Y_Z. If datadir is not set and datascope=True,
-    the datadir will be the datascope location of run X_Y_Z, e.g. /datascope/indraX/X_Y_Z/
-- snapnum goes from 0 to 63
-- tnum goes from 0 to 504 for the FFT data
+- ``X``,``Y``, and ``Z`` specify the Indra run and are ignored if a ``datadir`` 
+    is specified
+- ``datadir`` defaults to the FileDB location of run X_Y_Z. If ``datadir`` is not 
+    set and ``datascope=True``, the ``datadir`` will be the datascope location of 
+    run X_Y_Z, e.g. /datascope/indraX/X_Y_Z/
+- ``snapnum`` goes from 0 to 63
+- ``tnum`` goes from 0 to 504 for the FFT data
 
-Usage:
+
+Methods
+-------
 
 --- Snapshots ---
 
-header = getheader(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False)
-pos = getpos(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False)
-pos, vel, ids = getparticles(X,Y,Z,snapnum,datadir=None,datascope=False,sort=False,verbose=False)
+getheader(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False)
+    Reads and returns a dictionary of header parameters.
+getpos(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False)
+    Reads and returns an array of particle positions of shape [1024**3,3]
+    from one full snapshot.
+getparticles(X,Y,Z,snapnum,datadir=None,datascope=False,sort=False,verbose=False)
+    Reads particle positions, velocities, and IDs: pos, vel, ids = getparticles(...).
+    pos and vel are arrays of shape [1024**3,3], and ids have shape [1024**3].
 
 --- Halo and subhalo data ---
 
-TotNgroups, NTask = getfofheader(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False)
-TotNsubs, NTask = getsubheader(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False)
-groupLen, groupOffset = getfof(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False)
-groupLen, groupOffset, groupids = getfofids(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False)
-catalog = getsubcat(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False) # dictionary contains subLen and subOffset
-subids = getsubids(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False)
+getfofheader(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False)
+    Reads the header of the FOF data and returns the total number of FOF 
+    groups contained in all files at this snapshot and the number of files.
+getsubheader(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False)
+    Reads all headers of the SUBFIND files and returns the total number
+    of subhalos in all files at this snapshot and the number of files.
+getfof(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False)
+    Reads the number of particles in each FOF group and the Offset array needed to
+    index the IDs of the member particles: groupLen, groupOffset = getfof(...)
+getfofids(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False)
+    Reads the groupLen, groupOffset, and particle ID arrays for the FOF groups.
+getsubcat(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False)
+    Reads the SUBFIND subhalo catalogs and returns a dictionary of values. Some halo 
+    properties are defined for each FOF group, and some for each subhalo. The
+    dictionary contains the subLen and subOffset arrays needed to index the IDs
+    of the subhalo member particles (as for the FOF groups).
+getsubids(X,Y,Z,snapnum,datadir=None,datascope=False,verbose=False)
+    Reads and returns the IDs of the particles in each subhalo.
 
 --- FFT data ---
 
-fft_re, fft_im, a = getfft(X,Y,Z,tnum,datadir=None,datascope=False,verbose=False)
-kx, ky, kz = getkvals(L=128) # These are not read from file but are built and have the same shapes as fft_re and fft_im
-
-
-
-Written by Bridget Falck, 2018-2019
+getfft(X,Y,Z,tnum,datadir=None,datascope=False,verbose=False)
+    Reads and returns the real and imaginary components of the Fourier-space density
+    grid at output ``tnum`` and returns the scalefactor of this ``tnum``.
+getkvals(L=128) 
+    Builds and returns the x, y, and z components of the k-vectors associated
+    with the FFT data. Each are arrays with the same shapes as ``fft_re`` and ``fft_im``.
 
 """
 
