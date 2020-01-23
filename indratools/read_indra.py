@@ -101,7 +101,7 @@ class Run:
             or as a length 3 tuple giving the 3-digit ID as (X,Y,Z)
             where X, Y, and Z each go from 0 to 7.
         """
-        if isinstance(runid, int):
+        if isinstance(runid, np.integer):
             self.num = runid
             self.X, self.Y, self.Z = np.unravel_index(runid,(8,8,8))
         elif isinstance(runid, tuple):
@@ -431,8 +431,9 @@ def getsubcat(runid,snapnum,datadir=None,datascope=False,verbose=False):
 
 #    print('Reading from {}'.format(datadir))
     
-    sn = "%03d" % snapnum
-    tabfile = datadir+'/postproc_'+sn+'/sub_tab_'+sn+'.'
+#    sn = "%03d" % snapnum
+#    tabfile = datadir+'/postproc_'+sn+'/sub_tab_'+sn+'.'
+    tabfile = '{0}/postproc_{1:03d}/sub_tab_{1:03d}.'.format(datadir,snapnum)
     
     NTask = 256
     TotNgroups= getfofheader(runid,snapnum,datadir)
