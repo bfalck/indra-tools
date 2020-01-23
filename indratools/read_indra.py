@@ -4,9 +4,6 @@ Reading functions for the Indra suite of simulations hosted on the SciServer.
 Written by Bridget Falck, 2018-2019
 
 
-Current branch bigchange: will break all reading code using previous version!
-
-
 TODO: add usage examples
 TODO: add docstrings for methods
 TODO: add/update error handling
@@ -101,7 +98,7 @@ class Run:
             or as a length 3 tuple giving the 3-digit ID as (X,Y,Z)
             where X, Y, and Z each go from 0 to 7.
         """
-        if isinstance(runid, np.integer):
+        if isinstance(runid, int) or isinstance(runid, np.integer):
             self.num = runid
             self.X, self.Y, self.Z = np.unravel_index(runid,(8,8,8))
         elif isinstance(runid, tuple):
