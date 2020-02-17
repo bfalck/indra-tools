@@ -794,7 +794,7 @@ def getfft(runid,tnum,datadir=None,datascope=False,verbose=False):
 
     if (verbose == True): print('Reading from {}'.format(datadir))
     
-    tabfile = '{0}/FFT_DATA/FFT_128_{1:03d}.dat'.format(datadir,tnum)
+    filename = '{0}/FFT_DATA/FFT_128_{1:03d}.dat'.format(datadir,tnum)
     
     L = 128
     L2 = L//2
