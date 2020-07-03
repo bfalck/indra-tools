@@ -1,3 +1,7 @@
+from .read_indra import *
+
+
+"""
 from .read_indra import Run
 from .read_indra import get_loc
 from .read_indra import getheader
@@ -11,3 +15,4 @@ from .read_indra import getsubcat
 from .read_indra import getsubids
 from .read_indra import getfft
 from .read_indra import getkvals
+"""
