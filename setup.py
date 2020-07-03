@@ -8,6 +8,5 @@ setup(name='indratools',
       author='Bridget Falck',
       author_email='bridget.falck@jhu.edu',
       packages=['indratools'],
-      package_dir = {'indratools': 'indra-tools/indratools'},
       package_data={'indratools': ['data/*.txt']}
     )
