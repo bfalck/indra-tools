@@ -4,8 +4,6 @@ Utility functions for the Indra suite of simulations hosted on the SciServer.
 Written by Bridget Falck, 2018-2020
 
 
-TODO:.....
-
 
 Inputs: 
 - ``snapinput`` is an optional subset of snapshots for which redshifts and scale factors
