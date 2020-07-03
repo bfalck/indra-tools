@@ -135,7 +135,7 @@ def get_loc(runid):
     return fd[run.num % 36]+'{}_{}_{}/'.format(run.X,run.Y,run.Z)
 
 
-def readheader(f):
+def _readheader(f):
     """Utility function for reading Indra snapshot files"""
 
     if np.fromfile(f,np.int32,1) != 256:
@@ -196,12 +196,12 @@ def getheader(runid,snapnum,datadir=None,datascope=False,verbose=False):
     filename = '{0}/snapdir_{1:03d}/snapshot_{1:03d}.'.format(datadir,snapnum)
     f = open(filename+str(0),'rb')
 
-    header = readheader(f)
+    header = _readheader(f)
     f.close()
     
     return header
 
-def readpos(f,npfile):
+def _readpos(f,npfile):
     """Utility function for ``getpos()``"""
     
     thispos = np.fromfile(f,np.float32,3*npfile)
@@ -209,10 +209,10 @@ def readpos(f,npfile):
     
     return thispos
 
-def readsnap(f,npfile):
+def _readsnap(f,npfile):
     """Utility function for ``getparticles()``"""
     
-    thispos = readpos(f,npfile)
+    thispos = _readpos(f,npfile)
     empty = np.fromfile(f,np.int32,2)
     thisvel = np.fromfile(f,np.float32,3*npfile)
     thisvel = np.reshape(thisvel, [npfile, 3])
@@ -267,8 +267,8 @@ def getpos(runid,snapnum,datadir=None,datascope=False,verbose=False):
     for i in np.arange(0,NTask):
         f = open(filename+str(i),'rb')
         
-        header = readheader(f)
-        thispos = readpos(f,header['np_file'])
+        header = _readheader(f)
+        thispos = _readpos(f,header['np_file'])
         
         f.close()
     
@@ -329,8 +329,8 @@ def getparticles(runid,snapnum,datadir=None,datascope=False,sort=False,verbose=F
     istart = 0
     for i in np.arange(0,NTask):
         f = open(filename+str(i),'rb')
-        header = readheader(f)
-        thispos,thisvel,thisID = readsnap(f,header['np_file'])
+        header = _readheader(f)
+        thispos,thisvel,thisID = _readsnap(f,header['np_file'])
         f.close()
 
         thisID -= 1 # make IDs start at 0 to use to index pos and vel
