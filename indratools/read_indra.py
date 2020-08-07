@@ -37,9 +37,9 @@ getparticles(runid,snapnum,datadir=None,datascope=False,sort=False,verbose=False
 getfofheader(runid,snapnum,datadir=None,datascope=False,verbose=False)
     Reads the header of the FOF data and returns the total number of FOF 
     groups contained in all files at this snapshot.
-getsubheader(runid,snapnum,datadir=None,datascope=False,verbose=False)
+getsubheader(runid,snapnum,datadir=None,datascope=False,getfof=False,verbose=False)
     Reads all headers of the SUBFIND files and returns the total number
-    of subhalos in all files at this snapshot.
+    of subhalos (or FOF groups) in all files at this snapshot.
 getfof(runid,snapnum,datadir=None,datascope=False,verbose=False)
     Reads the number of particles in each FOF group and the Offset array needed to
     index the IDs of the member particles: groupLen, groupOffset = getfof(...)
@@ -388,12 +388,19 @@ def getfofheader(runid,snapnum,datadir=None,datascope=False,verbose=False):
             datadir = get_loc(runid)
 
     if (verbose == True): print('Reading from {}'.format(datadir))
-
+        
     tabfile = '{0}/snapdir_{1:03d}/group_tab_{1:03d}.'.format(datadir,snapnum)
 
-    f = open(tabfile+str(0),'rb')
-    Ngroups, Nids, TotNgroups, NTask = np.fromfile(f, np.int32, 4)
-    f.close()
+    try:
+        with open(tabfile+str(0),'rb') as f:
+            Ngroups, Nids, TotNgroups, NTask = np.fromfile(f, np.int32, 4)
+    except FileNotFoundError:
+        # doesn't exist
+        TotNgroups = 0
+
+#    f = open(tabfile+str(0),'rb')
+#    Ngroups, Nids, TotNgroups, NTask = np.fromfile(f, np.int32, 4)
+#    f.close()
     
     return TotNgroups
 
@@ -526,7 +533,7 @@ def getfofids(runid,snapnum,datadir=None,datascope=False,verbose=False):
     
     return groupLen,groupOffset,groupids-1
 
-def getsubheader(runid,snapnum,datadir=None,datascope=False,verbose=False):
+def getsubheader(runid,snapnum,datadir=None,datascope=False,getfof=False,verbose=False):
     """Reads the SUBFIND header (total number of subhalos) of an Indra snapshot.
     
     Parameters
@@ -543,13 +550,16 @@ def getsubheader(runid,snapnum,datadir=None,datascope=False,verbose=False):
     datascope : boolean, optional
         If True, read from /datascope/indraX/X_Y_Z/ (default False).
         Overwritten if ``datascope`` is set.
+    getfof : boolean, optional 
+        If true, return TotNgroups instead of TotNsubs (default False)
+        (For example, when group_tab files not available)
     verbose : boolean, optional
         If True, print reading statements (default False).
     
     Returns
     -------
-    TotNsubs : int
-        Total number of subhalos in this snapshot over all 256 files.
+    TotNsubs (or TotNgroups if getfof is True) : int
+        Total number of subhalos (or FOF groups) in this snapshot over all 256 files.
     """
 
     run = Run(runid)
@@ -563,18 +573,22 @@ def getsubheader(runid,snapnum,datadir=None,datascope=False,verbose=False):
     
     tabfile = '{0}/postproc_{1:03d}/sub_tab_{1:03d}.'.format(datadir,snapnum)
 
-    TotNsubs = 0
+    # open first file to get NTask just in case (but it should be 256) and TotNgroups
     f = open(tabfile+str(0),'rb')
     Ngroups,Nids,TotNgroups,NTask = np.fromfile(f,np.int32,4)
     f.close()
-    for i in np.arange(0,NTask):
-        f = open(tabfile+str(i),'rb')
-#        print('opening file '+tabfile+str(i))
-        Ngroups, Nids, TotNgroups, NTask, Nsubs = np.fromfile(f, np.int32, 5)
-        TotNsubs += Nsubs
-        f.close()
 
-    return TotNsubs
+    if getfof: return TotNgroups
+    else:
+        TotNsubs = 0
+        for i in np.arange(0,NTask):
+            f = open(tabfile+str(i),'rb')
+    #        print('opening file '+tabfile+str(i))
+            Ngroups, Nids, TotNgroups, NTask, Nsubs = np.fromfile(f, np.int32, 5)
+            TotNsubs += Nsubs
+            f.close()
+
+        return TotNsubs
 
 def getsubcat(runid,snapnum,datadir=None,datascope=False,verbose=False):
     """Reads the subhalo catalog of an Indra snapshot.
@@ -609,13 +623,14 @@ def getsubcat(runid,snapnum,datadir=None,datascope=False,verbose=False):
         else:
             datadir = get_loc(runid)
 
-#    print('Reading from {}'.format(datadir))
+    if (verbose == True): print('Reading from {}'.format(datadir))
     
     tabfile = '{0}/postproc_{1:03d}/sub_tab_{1:03d}.'.format(datadir,snapnum)
     
     NTask = 256
-    TotNgroups= getfofheader(runid,snapnum,datadir)
+    TotNgroups= getsubheader(runid,snapnum,datadir,getfof=True)
     TotNsubs = getsubheader(runid,snapnum,datadir)
+#    if TotNgroups == 0: return None
     if TotNsubs == 0: return None
     else:
         # Initialize data containers
