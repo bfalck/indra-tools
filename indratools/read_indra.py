@@ -6,6 +6,8 @@ Written by Bridget Falck, 2018-2020
 
 TODO: add usage examples
 TODO: add/update error handling
+TODO: getfof shouldn't return groupOffset (no ids, irrelevant)
+TODO: what should getfof and getfofids return if TotNgroups = 0?
 
 
 Inputs: 
@@ -65,6 +67,11 @@ getkvals(L=128)
 
 
 import numpy as np
+
+# Run/snap combinations with missing subfiles where there are no subhalos anyway:
+MissingFiles_OK = [(3,0,1,1)]
+# Run/snap combinations with missing/empty subfiles where there should be some:
+MissingFiles_Problem = [(2,4,2,59)]
 
 
 class Run:
@@ -513,6 +520,7 @@ def getfofids(runid,snapnum,datadir=None,datascope=False,verbose=False):
     TotNgroups = getfofheader(runid,snapnum,datadir)
     # Don't read if no groups...
     if TotNgroups == 0: return 0,0
+#    print("No FOF groups in {}_{}_{} snapshot {}: returning None".format(run.X,run.Y,run.Z,snapnum))
     else:
         groupLen,groupOffset = getfof(runid,snapnum,datadir)
         TotNids = np.sum(groupLen,dtype=np.int64)
@@ -573,6 +581,10 @@ def getsubheader(runid,snapnum,datadir=None,datascope=False,getfof=False,verbose
     
     tabfile = '{0}/postproc_{1:03d}/sub_tab_{1:03d}.'.format(datadir,snapnum)
 
+    # don't read if there are missing files for any reason:
+    if (run.X,run.Y,run.Z,snapnum) in MissingFiles_OK+MissingFiles_Problem:
+        return 0
+
     # open first file to get NTask just in case (but it should be 256) and TotNgroups
     f = open(tabfile+str(0),'rb')
     Ngroups,Nids,TotNgroups,NTask = np.fromfile(f,np.int32,4)
@@ -630,8 +642,16 @@ def getsubcat(runid,snapnum,datadir=None,datascope=False,verbose=False):
     NTask = 256
     TotNgroups= getsubheader(runid,snapnum,datadir,getfof=True)
     TotNsubs = getsubheader(runid,snapnum,datadir)
+
 #    if TotNgroups == 0: return None
-    if TotNsubs == 0: return None
+    if TotNsubs == 0: 
+        if (run.X,run.Y,run.Z,snapnum) in MissingFiles_Problem:
+            print("Missing data in {}_{}_{} snapshot {}: returning None".format(run.X,run.Y,run.Z,snapnum))
+        else:
+            print("No subhalos in {}_{}_{} snapshot {}: returning None".format(run.X,run.Y,run.Z,snapnum))
+
+        return None
+
     else:
         # Initialize data containers
         catalog = {}
@@ -740,7 +760,15 @@ def getsubids(runid,snapnum,datadir=None,datascope=False,verbose=False):
     
     NTask = 256
     TotNsubs = getsubheader(runid,snapnum,datadir)
-    if TotNsubs == 0: return None
+
+    if TotNsubs == 0: 
+        if (run.X,run.Y,run.Z,snapnum) in MissingFiles_Problem:
+            print("Missing data in {}_{}_{} snapshot {}: returning None".format(run.X,run.Y,run.Z,snapnum))
+        else:
+            print("No subhalos in {}_{}_{} snapshot {}: returning None".format(run.X,run.Y,run.Z,snapnum))
+
+        return None
+
     else:
         TotSubids = 0
         # Get total number of IDs (including unbound particle IDs)
