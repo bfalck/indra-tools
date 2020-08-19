@@ -4,10 +4,7 @@ Reading functions for the Indra suite of simulations hosted on the SciServer.
 Written by Bridget Falck, 2018-2020
 
 
-TODO: add usage examples
-TODO: add/update error handling
-TODO: getfof shouldn't return groupOffset (no ids, irrelevant)
-TODO: what should getfof and getfofids return if TotNgroups = 0?
+TODO: add usage examples?
 
 
 Inputs: 
@@ -201,11 +198,18 @@ def getheader(runid,snapnum,datadir=None,datascope=False,verbose=False):
     if (verbose == True): print('Reading from {}'.format(datadir))
 
     filename = '{0}/snapdir_{1:03d}/snapshot_{1:03d}.'.format(datadir,snapnum)
-    f = open(filename+str(0),'rb')
 
-    header = _readheader(f)
-    f.close()
-    
+#    f = open(filename+str(0),'rb')
+#    header = _readheader(f)
+#    f.close()
+    try:
+        with open(filename+str(0),'rb') as f:
+            header = _readheader(f)
+    except FileNotFoundError:
+        # doesn't exist
+        print('No file {}: returning None'.format(filename+str(0)))
+        return None
+
     return header
 
 def _readpos(f,npfile):
@@ -265,6 +269,15 @@ def getpos(runid,snapnum,datadir=None,datascope=False,verbose=False):
     
     filename = '{0}/snapdir_{1:03d}/snapshot_{1:03d}.'.format(datadir,snapnum)
 
+    # Check that files exist:
+    try:
+        with open(filename+str(0),'rb') as f:
+            pass
+    except FileNotFoundError:
+        # doesn't exist
+        print('No file {}: returning None'.format(filename+str(0)))
+        return None
+    
     NTask = 256
     nparticles = 1024
     
@@ -325,6 +338,15 @@ def getparticles(runid,snapnum,datadir=None,datascope=False,sort=False,verbose=F
     if (verbose == True): print('Reading from {}'.format(datadir))
     
     filename = '{0}/snapdir_{1:03d}/snapshot_{1:03d}.'.format(datadir,snapnum)
+
+    # Check that files exist:
+    try:
+        with open(filename+str(0),'rb') as f:
+            pass
+    except FileNotFoundError:
+        # doesn't exist
+        print('No file {}: returning None'.format(filename+str(0)))
+        return None,None,None
 
     NTask = 256
     nparticles = 1024
@@ -403,6 +425,7 @@ def getfofheader(runid,snapnum,datadir=None,datascope=False,verbose=False):
             Ngroups, Nids, TotNgroups, NTask = np.fromfile(f, np.int32, 4)
     except FileNotFoundError:
         # doesn't exist
+        print('No file {}'.format(tabfile+str(0)))
         TotNgroups = 0
 
 #    f = open(tabfile+str(0),'rb')
@@ -411,7 +434,7 @@ def getfofheader(runid,snapnum,datadir=None,datascope=False,verbose=False):
     
     return TotNgroups
 
-def getfof(runid,snapnum,datadir=None,datascope=False,verbose=False):
+def getfof(runid,snapnum,datadir=None,datascope=False,getOffset=False,verbose=False):
     """Reads the FOF group info of an Indra snapshot.
     
     Parameters
@@ -428,14 +451,17 @@ def getfof(runid,snapnum,datadir=None,datascope=False,verbose=False):
     datascope : boolean, optional
         If True, read from /datascope/indraX/X_Y_Z/ (default False).
         Overwritten if ``datascope`` is set.
+    getOffset : boolean, optional
+        If True, returns groupLen, groupOffset, otherwise just groupLen (default False)
     verbose : boolean, optional
         If True, print reading statements (default False).
     
     Returns
     -------
-    groupLen, groupOffset : tuple of ndarrays
-        Number of particles in each FOF group, and Offset array needed
-        in order to index the IDs of the group's constituent particles.
+    groupLen (, groupOffset) : ndarray or tuple of ndarrays
+        Number of particles in each FOF group, and if getOffset = True,
+        Offset array needed in order to index the IDs of the group's 
+        constituent particles.
     """
 
     run = Run(runid)
@@ -453,8 +479,13 @@ def getfof(runid,snapnum,datadir=None,datascope=False,verbose=False):
     NTask = 256
     TotNgroups = getfofheader(runid,snapnum,datadir)
     # Don't read if no groups...
-    if TotNgroups == 0: return 0,0
-    else:
+    if TotNgroups == 0: 
+        print("No FOF groups in {}_{}_{} snapshot {}: returning None".format(run.X,run.Y,run.Z,snapnum))
+        if getOffset:
+            return None,None
+        else:
+            return None
+    elif getOffset:
         groupLen = np.zeros(TotNgroups,dtype=np.int32)
         groupOffset = np.zeros(TotNgroups,dtype=np.int32)
 
@@ -471,10 +502,25 @@ def getfof(runid,snapnum,datadir=None,datascope=False,verbose=False):
                 groupOffset[istartGroup:(istartGroup+Ngroups)] = locOffset+istartIDs
                 istartGroup += Ngroups
                 istartIDs += Nids
-#            else: print('No groups in file %d' % i)
+            f.close()
+    else:
+        groupLen = np.zeros(TotNgroups,dtype=np.int32)
+
+        istartGroup = 0
+        for i in np.arange(0,NTask):
+            f = open(tabfile+str(i), 'rb')
+    
+            Ngroups, Nids, TotNgroups, NTask = np.fromfile(f, np.int32, 4)
+            if Ngroups > 0:
+                locLen = np.fromfile(f,np.int32,Ngroups)
+                groupLen[istartGroup:(istartGroup+Ngroups)] = locLen
+                istartGroup += Ngroups
             f.close()
     
-    return groupLen,groupOffset
+    if getOffset:
+        return groupLen,groupOffset
+    else:
+        return groupLen
 
 def getfofids(runid,snapnum,datadir=None,datascope=False,verbose=False):
     """Reads the FOF group info (including particle IDs) of an Indra snapshot.
@@ -519,10 +565,11 @@ def getfofids(runid,snapnum,datadir=None,datascope=False,verbose=False):
     NTask = 256
     TotNgroups = getfofheader(runid,snapnum,datadir)
     # Don't read if no groups...
-    if TotNgroups == 0: return 0,0
-#    print("No FOF groups in {}_{}_{} snapshot {}: returning None".format(run.X,run.Y,run.Z,snapnum))
+    if TotNgroups == 0: 
+        print("No FOF groups in {}_{}_{} snapshot {}: returning None".format(run.X,run.Y,run.Z,snapnum))
+        return None,None,None
     else:
-        groupLen,groupOffset = getfof(runid,snapnum,datadir)
+        groupLen,groupOffset = getfof(runid,snapnum,datadir,getOffset=True)
         TotNids = np.sum(groupLen,dtype=np.int64)
         groupids = np.zeros(TotNids,dtype=np.int64)
 
@@ -842,18 +889,26 @@ def getfft(runid,tnum,datadir=None,datascope=False,verbose=False):
     L = 128
     L2 = L//2
 
-    f = open(filename,'rb')
-    time = np.fromfile(f,np.float64,1)
-    nsize = np.fromfile(f,np.int32,1)
-    fft_re = np.fromfile(f,np.float32,nsize[0])
-    fft_im = np.fromfile(f,np.float32,nsize[0])
-    f.close()
+#    f = open(filename,'rb')
+    # Check that files exist:
+    try:
+        with open(filename,'rb') as f:
+            time = np.fromfile(f,np.float64,1)
+            nsize = np.fromfile(f,np.int32,1)
+            fft_re = np.fromfile(f,np.float32,nsize[0])
+            fft_im = np.fromfile(f,np.float32,nsize[0])
+            f.close()
 
-    fft_re = np.reshape(fft_re,[L+1,L+1,L2+1])
-    fft_im = np.reshape(fft_im,[L+1,L+1,L2+1])
-    #print('a = {}'.format(time[0]))
+            fft_re = np.reshape(fft_re,[L+1,L+1,L2+1])
+            fft_im = np.reshape(fft_im,[L+1,L+1,L2+1])
+            #print('a = {}'.format(time[0]))
 
-    return fft_re,fft_im,time[0]
+            return fft_re,fft_im,time[0]
+    except FileNotFoundError:
+        # doesn't exist
+        print('No file {}: returning None'.format(filename))
+        return None,None,None
+
 
 def getkvals(L=128):
     """Computes the k values that correspond the Fourier mode outputs.
