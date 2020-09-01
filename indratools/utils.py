@@ -24,6 +24,12 @@ FFT_snapinfo(snapinput=None)
 get_pklin()
     Reads and returns the k and P(k) values of the CAMB linear power spectrum, 
     normalized to z=0, for the Indra cosmology.
+fdb_snaps(runnum=None,...)
+    Returns snapshots on FileDB: full sets (default), or those in directory of runnum
+fdb_runs(loc=None,getstring=True,...)
+    Returns Indra runs (as string 'X_Y_Z' (default) or runnum) on FileDB: full runs
+    (default) or runs located in FileDB node specified by loc = node_vol, node_num.
+    E.g., filedb/data05_01 specified by loc = (5,1).
 
 """
 
