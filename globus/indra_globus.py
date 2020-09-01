@@ -3,13 +3,13 @@ from globus_sdk import TransferClient
 
 
 def get_run_num(x,y,z):
-    '''Helper function to figure out unraveled index from raveled index'''
+    '''Helper function to figure out raveled index from unraveled index'''
     return x*64+y*8+z
 
 def get_xyz(run_num):
-    '''Helper function to figure out raveled index from unraveled index'''
+    '''Helper function to figure out unraveled index from raveled index'''
     return run_num//64, run_num//8 % 8, run_num % 8
-    
+
 
 class IndraTransfer():
     def __init__(self, token_response):

@@ -13,7 +13,7 @@ Inputs:
     it is either an integer from 0 to 511 or a tuple containing (``X``,``Y``,``Z``)
 - ``datadir`` defaults to the FileDB location of run ``X_Y_Z``. If ``datadir`` is not 
     set and ``datascope=True``, the ``datadir`` will be the datascope location of 
-    run ``X_Y_Z``.
+    run ``X_Y_Z`` (as mounted on a SciServer container).
 - ``snapnum`` goes from 0 to 63
 - ``tnum`` goes from 0 to 504 for the FFT data
 
