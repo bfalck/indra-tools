@@ -4,8 +4,6 @@ Utility functions for the Indra suite of simulations hosted on the SciServer.
 Written by Bridget Falck, 2018-2020
 
 
-TO DO: documentation for fdb functions
-
 
 Inputs: 
 - ``snapinput`` is an optional subset of snapshots for which redshifts and scale factors
@@ -15,6 +13,11 @@ Inputs:
 Methods
 -------
 
+get_run_num(x,y,z)
+    Helper function to return the raveled run number (0 to 511) from the unraveled
+    x, y, z identifiers (each 0 to 7).
+get_xyz(run_num)
+    Helper function to return the x, y, z identifiers from the run number (0 to 511).
 part_snapinfo(snapinput=None)
     Reads and returns all snapnums, redshifts, and scale factors for all 64 particle 
     snapshots, or a subset of redshifts and scale factors if snapinput is set.
@@ -24,12 +27,14 @@ FFT_snapinfo(snapinput=None)
 get_pklin()
     Reads and returns the k and P(k) values of the CAMB linear power spectrum, 
     normalized to z=0, for the Indra cosmology.
-fdb_snaps(runnum=None,...)
-    Returns snapshots on FileDB: full sets (default), or those in directory of runnum
-fdb_runs(loc=None,getstring=True,...)
-    Returns Indra runs (as string 'X_Y_Z' (default) or runnum) on FileDB: full runs
-    (default) or runs located in FileDB node specified by loc = node_vol, node_num.
-    E.g., filedb/data05_01 specified by loc = (5,1).
+fdb_snaps(runnum=None,Container=True,Dask=False,DaskLocal=False)
+    Returns snapshots on FileDB: full sets (default), or those in directory of runnum.
+    Optional boolean inputs specify the environment to determine filesystem paths.
+fdb_runs(loc=None,getstring=True,Container=True,Dask=False,DaskLocal=False)
+    Returns Indra runs (as string 'X_Y_Z' (default) or as a runnum) on FileDB: full
+    runs (default) or runs located in FileDB node specified by loc = node_vol, node_num.
+    For example, filedb/data05_01 specified by loc = (5,1).
+    Optional boolean inputs specify the environment to determine filesystem paths.
 
 """
 
@@ -39,12 +44,38 @@ import glob
 
 
 def get_run_num(x,y,z):
-    '''Helper function to figure out raveled index from unraveled index'''
+    '''Helper function to figure out raveled index from unraveled index.
+
+    Parameters
+    ----------
+    x : int
+        The first integer of run X_Y_Z, from 0 to 7
+    y: int
+        The second integer of run X_Y_Z, from 0 to 7
+    z : int
+        The third integer of run X_Y_Z, from 0 to 7    
+
+    Returns
+    -------
+    num : int
+        The ID of the run as an integer, from 0 to 511
+    '''
 #    return x*64+y*8+z
     return np.ravel_multi_index((x,y,z),(8,8,8))
 
 def get_xyz(run_num):
-    '''Helper function to figure out unraveled index from raveled index'''
+    '''Helper function to figure out unraveled index from raveled index.
+
+    Parameters
+    ----------
+    run_num : int
+        The ID of the run as an integer, from 0 to 511
+    
+    Returns
+    -------
+    x, y, z : ints
+        Integers from 0 to 7 identifying run X_Y_Z
+    '''
 #    return run_num//64, run_num//8 % 8, run_num % 8
     return np.unravel_index(run_num,(8,8,8))
 
@@ -115,9 +146,27 @@ def get_pklin():
 
     
 def fdb_snaps(runnum=None,Container=True,Dask=False,DaskLocal=False):
-    """Return list of snapshots on FileDB.
-    If no runnum given, pick a non-full run to choose snaps that exist for every run
+    """Return list of snapshots on FileDB by running glob on the filesystem, either
+    for a specific run given by runnum, or return list of the full sets of snapshots
+    that are on FileDB (for every run).
+    
+    Parameters
+    ----------
+    runnum : int (default None)
+        The ID of the run as an integer.
+    Container : boolean (default True)
+        Check filesystem as mounted on a Compute container.
+    Dask : boolean (default False)
+        Check filesystem as mounted on the Dask cluster.
+    DaskLocal : boolean (default False)
+        Check filesystem as seen by Dask worker on local FileDB node.
+
+    Returns
+    -------
+    snaps : ndarray
+        Sorted array of snapshots as integers
     """
+
     if (Dask or DaskLocal):
         Container = False
 
@@ -150,10 +199,33 @@ def fdb_snaps(runnum=None,Container=True,Dask=False,DaskLocal=False):
             
 
 def fdb_runs(loc=None,getstring=True,Container=True,Dask=False,DaskLocal=False):
-    """Returns list of full runs (all snaps) on FileDB.
-    If some input set, return list of runs at that loc
-    INPUT: loc is a tuple of (node volume, node num)
+    """Returns list of full runs (containing all snapshots) on FileDB.
+    If loc is set, return list of runs at that FileDB location (one of 36 volumes).
+    
+    Parameters
+    ----------
+    loc : (node_volume, node_number) (optional)
+        Tuple that identifies one of the 36 FileDB locations, where 
+        node_volume is an int from 1 to 12, node_number an int from 1 to 3.
+        If set, return list of runs at that location. If not, return list
+        of full runs (containing every snapshot) on FileDB.
+    getstring : boolean (default True)
+        If True, return runs as string identifiers ('X_Y_Z').
+        If False, return as list of integers.
+    Container : boolean (default True)
+        Check filesystem as mounted on a Compute container.
+    Dask : boolean (default False)
+        Check filesystem as mounted on the Dask cluster.
+    DaskLocal : boolean (default False)
+        Check filesystem as seen by Dask worker on local FileDB node.
+
+    
+    Returns
+    -------
+    runs : list
+        Sorted list of string run identifiers ('X_Y_Z') or integer run numbers.
     """
+
     if (Dask or DaskLocal):
         Container = False
 
