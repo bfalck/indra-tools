@@ -98,7 +98,7 @@ def part_snapinfo(snapinput=None):
     snapfile = pkg_resources.resource_filename('indratools', 'data/snapinfo.txt')
     snaps,redshifts,times = np.loadtxt(snapfile,unpack=True)
     
-    if snapinput == None:
+    if snapinput is None:
         return snaps, redshifts, times
     else:
         return redshifts[snapinput],times[snapinput]
@@ -122,7 +122,7 @@ def FFT_snapinfo(snapinput=None):
     snapfile = pkg_resources.resource_filename('indratools', 'data/FFT_snapinfo.txt')
     snaps,redshifts,times = np.loadtxt(snapfile,unpack=True)
 
-    if snapinput == None:
+    if snapinput is None:
         return snaps, redshifts, times
     else:
         return redshifts[snapinput],times[snapinput]
