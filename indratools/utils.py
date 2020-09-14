@@ -27,6 +27,9 @@ FFT_snapinfo(snapinput=None)
 get_pklin()
     Reads and returns the k and P(k) values of the CAMB linear power spectrum, 
     normalized to z=0, for the Indra cosmology.
+cic_pk(snapnum,ngrid=512,nruns=320)
+    Reads and returns the power spectra measured from CIC interpolation of
+    the particle positions of multiple runs and one snapshot.
 fdb_snaps(runnum=None,Container=True,Dask=False,DaskLocal=False)
     Returns snapshots on FileDB: full sets (default), or those in directory of runnum.
     Optional boolean inputs specify the environment to determine filesystem paths.
@@ -48,16 +51,12 @@ def get_run_num(x,y,z):
 
     Parameters
     ----------
-    x : int
-        The first integer of run X_Y_Z, from 0 to 7
-    y: int
-        The second integer of run X_Y_Z, from 0 to 7
-    z : int
-        The third integer of run X_Y_Z, from 0 to 7    
+    x, y, z : int
+        The integers specifying run x_y_z, each from 0 to 7
 
     Returns
     -------
-    num : int
+    int
         The ID of the run as an integer, from 0 to 511
     '''
 #    return x*64+y*8+z
@@ -74,7 +73,7 @@ def get_xyz(run_num):
     Returns
     -------
     x, y, z : ints
-        Integers from 0 to 7 identifying run X_Y_Z
+        Integers from 0 to 7 identifying run x_y_z
     '''
 #    return run_num//64, run_num//8 % 8, run_num % 8
     return np.unravel_index(run_num,(8,8,8))
@@ -86,7 +85,7 @@ def part_snapinfo(snapinput=None):
     
     Parameters
     ----------
-    snapinput : int or array, optional
+    snapinput : int or array_like, optional
         Subset of snapnums for which redshifts and scale factors are desired
     
     Returns
@@ -110,7 +109,7 @@ def FFT_snapinfo(snapinput=None):
     
     Parameters
     ----------
-    snapinput : int or array, optional
+    snapinput : int or array_like, optional
         Subset of snapnums for which redshifts and scale factors are desired
     
     Returns
@@ -144,6 +143,33 @@ def get_pklin():
     return k, pk
 
 
+def cic_pk(snapnum,ngrid=512,nruns=320):
+    """Reads and returns the power spectra measured from CIC interpolation of
+    the particle positions of multiple runs and one snapshot.
+    
+    Parameters
+    ----------
+    snapnum : int
+        snapshot number
+    ngrid : int (default 512)
+        number of grid cells used for CIC interpolation (determines Nyquist frequency)
+    nruns : int (default 320)
+        number of Indra runs included (e.g. 320 is for runs 128 to 447)
+    
+    Returns
+    -------
+    dict of {'k': ndarray, 'ps' : ndarray, 'poisson' : ndarray}
+        'k' is a 1-d array of bin values, 'ps' is a [len(k),nruns] array of P(k) values,
+        and 'poisson' is a 1-d array of 1/sqrt(N) for N counts in each bin.
+    """
+    
+    basedir = '/home/idies/workspace/indra/pk/' # need to decide, package with indra-tools or store on /sciserver/vc/indra
+    k = np.load(f'{basedir}/psbins_ng{ngrid}.npy')
+    pk = np.load(f'{basedir}/psvals_ng{ngrid}_s{snapnum}_{nruns}runs.npy')
+    err = np.load(f'{basedir}/pserr_ng{ngrid}.npy')
+    
+    return {'k':k, 'ps': pk, 'poisson': err}
+
     
 def fdb_snaps(runnum=None,Container=True,Dask=False,DaskLocal=False):
     """Return list of snapshots on FileDB by running glob on the filesystem, either
@@ -163,8 +189,8 @@ def fdb_snaps(runnum=None,Container=True,Dask=False,DaskLocal=False):
 
     Returns
     -------
-    snaps : ndarray
-        Sorted array of snapshots as integers
+    ndarray
+        Sorted array of snapshots as integers.
     """
 
     if (Dask or DaskLocal):
@@ -222,7 +248,7 @@ def fdb_runs(loc=None,getstring=True,Container=True,Dask=False,DaskLocal=False):
     
     Returns
     -------
-    runs : list
+    list
         Sorted list of string run identifiers ('X_Y_Z') or integer run numbers.
     """
 
