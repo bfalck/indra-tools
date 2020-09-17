@@ -283,7 +283,7 @@ def fdb_snaps(runid=None,Container=True,Dask=False,DaskLocal=False):
     if Container:
         basedir='/home/idies/workspace/indra_filedb/'
     
-    runnum = Run(runid).runnum
+    runnum = Run(runid).num
         
     if runnum is None:
         # make sure to pick a non-full run: choosing 2_0_1
