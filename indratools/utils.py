@@ -8,7 +8,17 @@ Written by Bridget Falck, 2018-2020
 Inputs: 
 - ``snapinput`` is an optional subset of snapshots for which redshifts and scale factors
     are desired for particle or FFT snapshots.
+- ``runid`` specifies the Indra run, and is ignored if a ``datadir`` is specified; 
+    it is either an integer from 0 to 511 or a tuple containing (``X``,``Y``,``Z``)
 
+
+
+Classes
+-------
+
+Run(runid)
+    Define the runnum (if runid is a tuple of (X,Y,Z)) and X, Y, Z values (if runid is an int)
+    that specify this Indra run.
 
 Methods
 -------
@@ -18,6 +28,9 @@ get_run_num(x,y,z)
     x, y, z identifiers (each 0 to 7).
 get_xyz(run_num)
     Helper function to return the x, y, z identifiers from the run number (0 to 511).
+get_loc(runid)
+    Returns file location of given Indra run on the FileDB data volumes, as 
+    mounted on SciServer Compute containers.
 part_snapinfo(snapinput=None)
     Reads and returns all snapnums, redshifts, and scale factors for all 64 particle 
     snapshots, or a subset of redshifts and scale factors if snapinput is set.
@@ -62,6 +75,7 @@ def get_run_num(x,y,z):
 #    return x*64+y*8+z
     return np.ravel_multi_index((x,y,z),(8,8,8))
 
+
 def get_xyz(run_num):
     '''Helper function to figure out unraveled index from raveled index.
 
@@ -77,6 +91,74 @@ def get_xyz(run_num):
     '''
 #    return run_num//64, run_num//8 % 8, run_num % 8
     return np.unravel_index(run_num,(8,8,8))
+
+
+class Run:
+    """
+    Specifies the current Indra simulation as both a number (from 0 to 511) 
+    and 3 integers, X_Y_Z (each go from 0 to 7), corresponding to the 
+    raveled and unraveled indices of an 8x8x8 cube. Instantiated with either
+    the number or the 3 integers as a tuple.
+    
+    Attributes
+    ----------
+    num : int
+        The ID of the run as an integer, from 0 to 511
+    X : int
+        The first integer of run X_Y_Z, from 0 to 7
+    Y : int
+        The second integer of run X_Y_Z, from 0 to 7
+    Z : int
+        The third integer of run X_Y_Z, from 0 to 7
+
+    """
+
+    def __init__(self, runid):
+        """
+        Parameters
+        ----------
+        runid : int or tuple
+            Specifies the Indra run either as an integer from 0 to 511
+            or as a length 3 tuple giving the 3-digit ID as (X,Y,Z)
+            where X, Y, and Z each go from 0 to 7.
+        """
+        if isinstance(runid, int) or isinstance(runid, np.integer):
+            self.num = runid
+            self.X, self.Y, self.Z = get_xyz(runid)
+        elif isinstance(runid, tuple):
+            self.X, self.Y, self.Z = runid
+            self.num = get_run_num(self.X,self.Y,self.Z)
+
+
+def get_loc(runid):
+    """Helper function to find file location of given Indra run on the FileDB
+    data volumes, as mounted on SciServer Compute containers.
+    
+    Parameters
+    ----------
+    runid : int or tuple
+        Specifies the Indra run either as an integer from 0 to 511
+        or as a length 3 tuple giving the 3-digit ID as (X,Y,Z)
+        where X, Y, and Z each go from 0 to 7.
+    
+    Returns
+    -------
+    filename : string
+        Full path of the directory containing the run specified by runid.
+    """
+
+    run = Run(runid)
+
+    # Get list of filedb locations: start with 08-01
+    fd = []
+    for f in range(8,13):
+        for d in range(1,4):
+            fd.append('/home/idies/workspace/indra_filedb/data{:02d}_{:02d}/'.format(f,d))
+    for f in range(1,8):
+        for d in range(1,4):
+            fd.append('/home/idies/workspace/indra_filedb/data{:02d}_{:02d}/'.format(f,d))
+
+    return fd[run.num % 36]+'{}_{}_{}/'.format(run.X,run.Y,run.Z)
 
 
 def part_snapinfo(snapinput=None):
@@ -171,15 +253,17 @@ def cic_pk(snapnum,ngrid=512,nruns=320):
     return {'k':k, 'ps': pk, 'poisson': err}
 
     
-def fdb_snaps(runnum=None,Container=True,Dask=False,DaskLocal=False):
+def fdb_snaps(runid=None,Container=True,Dask=False,DaskLocal=False):
     """Return list of snapshots on FileDB by running glob on the filesystem, either
     for a specific run given by runnum, or return list of the full sets of snapshots
     that are on FileDB (for every run).
     
     Parameters
     ----------
-    runnum : int (default None)
-        The ID of the run as an integer.
+    runid : int or tuple (default None)
+        Specifies the Indra run either as an integer from 0 to 511
+        or as a length 3 tuple giving the 3-digit ID as (X,Y,Z)
+        where X, Y, and Z each go from 0 to 7.
     Container : boolean (default True)
         Check filesystem as mounted on a Compute container.
     Dask : boolean (default False)
@@ -198,7 +282,9 @@ def fdb_snaps(runnum=None,Container=True,Dask=False,DaskLocal=False):
 
     if Container:
         basedir='/home/idies/workspace/indra_filedb/'
-
+    
+    runnum = Run(runid).runnum
+        
     if runnum is None:
         # make sure to pick a non-full run: choosing 2_0_1
         if Container:

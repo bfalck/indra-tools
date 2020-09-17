@@ -64,6 +64,7 @@ getkvals(L=128)
 """
 
 
+from .utils import *
 import numpy as np
 
 ds_basedir = '/home/idies/workspace/indra_dss/'
@@ -74,72 +75,6 @@ MissingFiles_OK = [(3,0,1,1)]
 MissingFiles_Problem = [(2,4,2,59)]
 
 
-class Run:
-    """
-    Specifies the current Indra simulation as both a number (from 0 to 511) 
-    and 3 integers, X_Y_Z (each go from 0 to 7), corresponding to the 
-    raveled and unraveled indices of an 8x8x8 cube. Instantiated with either
-    the number or the 3 integers as a tuple.
-    
-    Attributes
-    ----------
-    num : int
-        The ID of the run as an integer, from 0 to 511
-    X : int
-        The first integer of run X_Y_Z, from 0 to 7
-    Y : int
-        The second integer of run X_Y_Z, from 0 to 7
-    Z : int
-        The third integer of run X_Y_Z, from 0 to 7
-
-    """
-
-    def __init__(self, runid):
-        """
-        Parameters
-        ----------
-        runid : int or tuple
-            Specifies the Indra run either as an integer from 0 to 511
-            or as a length 3 tuple giving the 3-digit ID as (X,Y,Z)
-            where X, Y, and Z each go from 0 to 7.
-        """
-        if isinstance(runid, int) or isinstance(runid, np.integer):
-            self.num = runid
-            self.X, self.Y, self.Z = np.unravel_index(runid,(8,8,8))
-        elif isinstance(runid, tuple):
-            self.X, self.Y, self.Z = runid
-            self.num = np.ravel_multi_index(runid,(8,8,8))
-
-
-def get_loc(runid):
-    """Helper function to find file location of given Indra run on the FileDB
-    data volumes, as mounted on SciServer Compute containers.
-    
-    Parameters
-    ----------
-    runid : int or tuple
-        Specifies the Indra run either as an integer from 0 to 511
-        or as a length 3 tuple giving the 3-digit ID as (X,Y,Z)
-        where X, Y, and Z each go from 0 to 7.
-    
-    Returns
-    -------
-    filename : string
-        Full path of the directory containing the run specified by runid.
-    """
-
-    run = Run(runid)
-
-    # Get list of filedb locations: start with 08-01
-    fd = []
-    for f in range(8,13):
-        for d in range(1,4):
-            fd.append('/home/idies/workspace/indra_filedb/data{:02d}_{:02d}/'.format(f,d))
-    for f in range(1,8):
-        for d in range(1,4):
-            fd.append('/home/idies/workspace/indra_filedb/data{:02d}_{:02d}/'.format(f,d))
-
-    return fd[run.num % 36]+'{}_{}_{}/'.format(run.X,run.Y,run.Z)
 
 
 def _readheader(f):
