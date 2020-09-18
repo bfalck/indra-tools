@@ -113,7 +113,7 @@ def getheader(runid,snapnum,datadir=None,datascope=False,verbose=False):
         Which snapshot to read (0 to 63).
     datadir : string, optional
         If set, specify full path of directory containing simulation X_Y_Z.
-        Default is to read from the output of ``get_loc(runid)``.
+        Default is to read from the output of ``get_loc(runid,snapnum)``.
     datascope : boolean, optional
         If True, read from /datascope_path/indraX/X_Y_Z/ (default False).
         Ignored if ``datadir`` is set.
@@ -131,7 +131,7 @@ def getheader(runid,snapnum,datadir=None,datascope=False,verbose=False):
     if (datadir == None): 
         if (datascope == True): datadir = f'/{ds_basedir}/indra{run.X}/{run.X}_{run.Y}_{run.Z}/'
         else:
-            datadir = get_loc(runid)
+            datadir = get_loc(runid,snapnum)
 
     if (verbose == True): print('Reading from {}'.format(datadir))
 
@@ -183,7 +183,7 @@ def getpos(runid,snapnum,datadir=None,datascope=False,verbose=False):
         Which snapshot to read (0 to 63).
     datadir : string, optional
         If set, specify full path of directory containing simulation X_Y_Z.
-        Default is to read from the output of ``get_loc(runid)``.
+        Default is to read from the output of ``get_loc(runid,snapnum)``.
     datascope : boolean, optional
         If True, read from /datascope_path/indraX/X_Y_Z/ (default False).
         Ignored if ``datadir`` is set.
@@ -201,7 +201,7 @@ def getpos(runid,snapnum,datadir=None,datascope=False,verbose=False):
     if (datadir == None): 
         if (datascope == True): datadir = f'/{ds_basedir}/indra{run.X}/{run.X}_{run.Y}_{run.Z}/'
         else:
-            datadir = get_loc(runid)
+            datadir = get_loc(runid,snapnum)
 
     if (verbose == True): print('Reading from {}'.format(datadir))
     
@@ -248,7 +248,7 @@ def getparticles(runid,snapnum,datadir=None,datascope=False,sort=False,verbose=F
         Which snapshot to read (0 to 63).
     datadir : string, optional
         If set, specify full path of directory containing simulation X_Y_Z.
-        Default is to read from the output of ``get_loc(runid)``.
+        Default is to read from the output of ``get_loc(runid,snapnum)``.
     datascope : boolean, optional
         If True, read from /datascope_path/indraX/X_Y_Z/ (default False).
         Ignored if ``datadir`` is set.
@@ -271,7 +271,7 @@ def getparticles(runid,snapnum,datadir=None,datascope=False,sort=False,verbose=F
     if (datadir == None): 
         if (datascope == True): datadir = f'/{ds_basedir}/indra{run.X}/{run.X}_{run.Y}_{run.Z}/'
         else:
-            datadir = get_loc(runid)
+            datadir = get_loc(runid,snapnum)
 
     if (verbose == True): print('Reading from {}'.format(datadir))
     
@@ -334,7 +334,7 @@ def getfofheader(runid,snapnum,datadir=None,datascope=False,verbose=False):
         Which snapshot to read (0 to 63).
     datadir : string, optional
         If set, specify full path of directory containing simulation X_Y_Z.
-        Default is to read from the output of ``get_loc(runid)``.
+        Default is to read from the output of ``get_loc(runid,snapnum)``.
     datascope : boolean, optional
         If True, read from /datascope_path/indraX/X_Y_Z/ (default False).
         Ignored if ``datadir`` is set.
@@ -352,7 +352,7 @@ def getfofheader(runid,snapnum,datadir=None,datascope=False,verbose=False):
     if (datadir == None): 
         if (datascope == True): datadir = f'/{ds_basedir}/indra{run.X}/{run.X}_{run.Y}_{run.Z}/'
         else:
-            datadir = get_loc(runid)
+            datadir = get_loc(runid,snapnum)
 
     if (verbose == True): print('Reading from {}'.format(datadir))
         
@@ -385,7 +385,7 @@ def getfof(runid,snapnum,datadir=None,datascope=False,getOffset=False,verbose=Fa
         Which snapshot to read (0 to 63).
     datadir : string, optional
         If set, specify full path of directory containing simulation X_Y_Z.
-        Default is to read from the output of ``get_loc(runid)``.
+        Default is to read from the output of ``get_loc(runid,snapnum)``.
     datascope : boolean, optional
         If True, read from /datascope_path/indraX/X_Y_Z/ (default False).
         Ignored if ``datadir`` is set.
@@ -407,7 +407,7 @@ def getfof(runid,snapnum,datadir=None,datascope=False,getOffset=False,verbose=Fa
     if (datadir == None): 
         if (datascope == True): datadir = f'/{ds_basedir}/indra{run.X}/{run.X}_{run.Y}_{run.Z}/'
         else:
-            datadir = get_loc(runid)
+            datadir = get_loc(runid,snapnum)
 
     if (verbose == True): print('Reading from {}'.format(datadir))
     
@@ -473,7 +473,7 @@ def getfofids(runid,snapnum,datadir=None,datascope=False,verbose=False):
         Which snapshot to read (0 to 63).
     datadir : string, optional
         If set, specify full path of directory containing simulation X_Y_Z.
-        Default is to read from the output of ``get_loc(runid)``.
+        Default is to read from the output of ``get_loc(runid,snapnum)``.
     datascope : boolean, optional
         If True, read from /datascope_path/indraX/X_Y_Z/ (default False).
         Ignored if ``datadir`` is set.
@@ -493,7 +493,7 @@ def getfofids(runid,snapnum,datadir=None,datascope=False,verbose=False):
     if (datadir == None): 
         if (datascope == True): datadir = f'/{ds_basedir}/indra{run.X}/{run.X}_{run.Y}_{run.Z}/'
         else:
-            datadir = get_loc(runid)
+            datadir = get_loc(runid,snapnum)
 
     if (verbose == True): print('Reading from {}'.format(datadir))
     
@@ -560,7 +560,7 @@ def getsubheader(runid,snapnum,datadir=None,datascope=False,getfof=False,verbose
     if (datadir == None): 
         if (datascope == True): datadir = f'/{ds_basedir}/indra{run.X}/{run.X}_{run.Y}_{run.Z}/'
         else:
-            datadir = get_loc(runid)
+            datadir = get_loc(runid) #snapnum not specified, all files are on FileDB
 
     if (verbose == True): print('Reading from {}'.format(datadir))
     
@@ -719,7 +719,7 @@ def getsubids(runid,snapnum,datadir=None,datascope=False,verbose=False):
         Which snapshot to read (0 to 63).
     datadir : string, optional
         If set, specify full path of directory containing simulation X_Y_Z.
-        Default is to read from the output of ``get_loc(runid)``.
+        Default is to read from the output of ``get_loc(runid,snapnum)``.
     datascope : boolean, optional
         If True, read from /datascope_path/indraX/X_Y_Z/ (default False).
         Ignored if ``datadir`` is set.
@@ -737,7 +737,7 @@ def getsubids(runid,snapnum,datadir=None,datascope=False,verbose=False):
     if (datadir == None): 
         if (datascope == True): datadir = f'/{ds_basedir}/indra{run.X}/{run.X}_{run.Y}_{run.Z}/'
         else:
-            datadir = get_loc(runid)
+            datadir = get_loc(runid,snapnum)
 
     if (verbose == True): print('Reading from {}'.format(datadir))
     

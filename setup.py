@@ -3,7 +3,7 @@
 from distutils.core import setup
 
 setup(name='indratools',
-      version='0.5dev0',
+      version='0.5dev1',
       description='Utility code for the Indra Simulations',
       author='Bridget Falck',
       author_email='bridget.falck@jhu.edu',

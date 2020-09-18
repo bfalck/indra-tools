@@ -176,7 +176,7 @@ def particlesInShape(runid,snapnum,shape,getvel=False,getIDs=False,datadir=None,
     if (datadir == None): 
         if (datascope == True): datadir = f'/{ds_basedir}/indra{run.X}/{run.X}_{run.Y}_{run.Z}/'
         else:
-            datadir = get_loc(runid)
+            datadir = get_loc(runid,snapnum)
 
     if (verbose == True): print('Reading from {}'.format(datadir))
     
