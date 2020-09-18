@@ -18,6 +18,18 @@ class Sphere():
     """
     Represents a spherical region. Can check for inclusion of a point and serialize itself in the 
     format acecepted by the Spatial3D library's parser.
+    
+    Parameters
+    ----------
+    x, y, z : float
+        The coordinates of the center of the sphere in simulation units.
+    r : float
+        The radius of the sphere in simulation units.
+    
+    Methods
+    -------
+    contained(pos,box=1000)
+        Return a boolean index of the same shape as pos that will select particles in the shape.
     """
     def __init__(self,x,y,z,r):
         
@@ -51,9 +63,20 @@ class Box():
     """
     Represents a 3-dimensional rectangular box parallel to the coordinate axes. Can check for 
     inclusion of a point and serialize itself in the format acecepted by the Spatial3D library's parser.
-    (xmin,ymin,zmin) is lower-left corner (can be negative)
-    (xmax,ymax,zmax) is upper-right corner (can be > boxlen)
-    For a box that spans the periodic boundary, use wrapped coordinates to define corners.
+    
+    Parameters
+    ----------
+    xmin, ymin, zmin : float
+        The coordinates of the lower-left corner of the box in simulation units.
+        May be < 0 for a box that spans the periodic boundary.
+    xmax, ymax, zmax : float
+        The coordinates of the upper-right corner of the box in simulation units.
+        May be greater than the simulation's length for a box that spans the periodic boundary.
+    
+    Methods
+    -------
+    contained(pos,box=1000)
+        Return a boolean index of the same shape as pos that will select particles in the shape.
     """
     def __init__(self,xmin,ymin,zmin,xmax,ymax,zmax):
 
@@ -88,10 +111,22 @@ class Cone():
     """
     Represents a cone. Can check for inclusion of a point and serialize itself in the 
     format acecepted by the Spatial3D library's parser.
-    (x,y,z) is origin/vertex
-    (dx,dy,dz) is direction vector (not necessarily normalized)
-    angle is (half) opening angle in radians
-    depth is in Mpc/h (simulation units)
+    
+    Parameters
+    ----------
+    x, y, z : float
+        The coordinates of the vertex (origin) of the cone in simulation units.
+    dx, dy, dz : float
+        The direction vector, need not be normalized.
+    angle : float
+        The (half) opening angle of the cone in radians.
+    depth : float
+        The depth of the cone in simulation units.
+    
+    Methods
+    -------
+    contained(pos,box=1000)
+        Return a boolean index of the same shape as pos that will select particles in the shape.
     """
     def __init__(self,x,y,z,dx,dy,dz,angle,depth):
         
@@ -140,10 +175,22 @@ class ConeSegment():
     """
     Represents a cone segment. Can check for inclusion of a point and serialize itself in the 
     format acecepted by the Spatial3D library's parser.
-    (x,y,z) is origin/vertex
-    (dx,dy,dz) is direction vector (not necessarily normalized)
-    angle is (half) opening angle in radians
-    depthmin and depthmax in Mpc/h (simulation units)
+        
+    Parameters
+    ----------
+    x, y, z : float
+        The coordinates of the vertex (origin) of the cone encompassing this segment in simulation units.
+    dx, dy, dz : float
+        The direction vector, need not be normalized.
+    angle : float
+        The (half) opening angle of the cone in radians.
+    depthmin, depthmax : float
+        The minimum and maximum depth of the cone segment in simulation units.
+    
+    Methods
+    -------
+    contained(pos,box=1000)
+        Return a boolean index of the same shape as pos that will select particles in the shape.
     """
     def __init__(self,x,y,z,dx,dy,dz,angle,depthmin,depthmax):
         
