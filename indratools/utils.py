@@ -314,7 +314,7 @@ def get_loc(runid,snapnum=None):
         if run.num in fdb_runs(getstring=False) or snapnum in fdb_snaps(runid):
             return fdb_loc(runid)
         else:
-            return datadir = f'/{ds_basedir}/indra{run.X}/{run.X}_{run.Y}_{run.Z}/'
+            return f'/{ds_basedir}/indra{run.X}/{run.X}_{run.Y}_{run.Z}/'
 
 
 def part_snapinfo(snapinput=None):
