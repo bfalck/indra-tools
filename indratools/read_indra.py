@@ -11,9 +11,10 @@ TODO: add warning for indra0 and indra1
 Inputs: 
 - ``runid`` specifies the Indra run, and is ignored if a ``datadir`` is specified; 
     it is either an integer from 0 to 511 or a tuple containing (``X``,``Y``,``Z``)
-- ``datadir`` defaults to the FileDB location of run ``X_Y_Z``. If ``datadir`` is not 
-    set and ``datascope=True``, the ``datadir`` will be the datascope location of 
-    run ``X_Y_Z`` (as mounted on a SciServer container).
+- ``datadir`` defaults to the FileDB location of run ``X_Y_Z`` if it is there and
+    the DataScope location if not. If ``datadir`` is not set and ``datascope=True``,
+    the ``datadir`` will be the datascope location of run ``X_Y_Z`` (as mounted on 
+    a SciServer container).
 - ``snapnum`` goes from 0 to 63
 - ``tnum`` goes from 0 to 504 for the FFT data
 
