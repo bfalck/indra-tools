@@ -24,7 +24,7 @@ Methods
 
 --- Snapshots ---
 
-getheader(runid,snapnum,datadir=None,datascope=False,verbose=False)
+getheader(runid=128,snapnum=0,filenum=0,datadir=None,datascope=False,verbose=False)
     Reads and returns a dictionary of header parameters.
 getpos(runid,snapnum,datadir=None,datascope=False,verbose=False)
     Reads and returns an array of particle positions of shape [1024**3,3]
@@ -101,7 +101,7 @@ def _readheader(f):
     return header
 
 
-def getheader(runid,snapnum,datadir=None,datascope=False,verbose=False):
+def getheader(runid=128,snapnum=0,filenum=0,datadir=None,datascope=False,verbose=False):
     """Reads the Gadget header of an Indra snapshot.
     
     Parameters
@@ -142,7 +142,7 @@ def getheader(runid,snapnum,datadir=None,datascope=False,verbose=False):
 #    header = _readheader(f)
 #    f.close()
     try:
-        with open(filename+str(0),'rb') as f:
+        with open(filename+str(filenum),'rb') as f:
             header = _readheader(f)
     except FileNotFoundError:
         # doesn't exist
