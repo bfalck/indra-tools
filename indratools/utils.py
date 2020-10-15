@@ -167,10 +167,8 @@ def fdb_snaps(runid=None,Container=True,Dask=False,DaskLocal=False):
     if Container:
         basedir='/home/idies/workspace/indra_filedb/'
     
-    runn = Run(runid)
-    runnum = runid.num
         
-    if runnum is None:
+    if runid is None:
         # make sure to pick a non-full run: choosing 2_0_1
         if Container:
             datadir = basedir+'data03_01/2_0_1/'
@@ -181,15 +179,17 @@ def fdb_snaps(runid=None,Container=True,Dask=False,DaskLocal=False):
 
         globstr = datadir+'snapdir_*'
     else:
-        # first get runid from runnum, then use it to list snaps; filedb node can be wildcard
-        x, y, z = get_xyz(runnum)
-        runid = f'{x}_{y}_{z}'
+        # first get X_Y_Z from runnum, then use it to list snaps; filedb node can be wildcard
+        run = Run(runid)
+#        runnum = run.num
+        x, y, z = (run.X,run.Y,run.Z)
+        runstr = f'{x}_{y}_{z}'
         if Container:
-            globstr = basedir+'*/'+runid+'/snapdir_*'
+            globstr = basedir+'*/'+runstr+'/snapdir_*'
         elif Dask:
-            globstr = '/sciserver/*/cosmo/indra/'+runid+'/snapdir_*'
+            globstr = '/sciserver/*/cosmo/indra/'+runstr+'/snapdir_*'
         elif DaskLocal:
-            globstr = '/srv/*/cosmo/indra/'+runid+'/snapdir_*'
+            globstr = '/srv/*/cosmo/indra/'+runstr+'/snapdir_*'
 
     snaps = sorted([np.int(line[-2:]) for line in glob.iglob(globstr)])
     return np.array(snaps)
