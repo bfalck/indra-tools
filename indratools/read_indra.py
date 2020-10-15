@@ -73,7 +73,7 @@ ds_basedir = '/home/idies/workspace/indra_dss/'
 # Run/snap combinations with missing subfiles where there are no subhalos anyway:
 MissingFiles_OK = [(3,0,1,1)]
 # Run/snap combinations with missing/empty subfiles where there should be some:
-MissingFiles_Problem = [(2,4,2,59)]
+MissingFiles_Problem = []#[(2,4,2,59)]
 
 
 
@@ -568,6 +568,7 @@ def getsubheader(runid,snapnum,datadir=None,datascope=False,getfof=False,verbose
     tabfile = '{0}/postproc_{1:03d}/sub_tab_{1:03d}.'.format(datadir,snapnum)
 
     # don't read if there are missing files for any reason:
+    # (because MissingFiles_OK is at early snapshot where there are no halos anyway)
     if (run.X,run.Y,run.Z,snapnum) in MissingFiles_OK+MissingFiles_Problem:
         return 0
 
