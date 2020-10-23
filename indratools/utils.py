@@ -402,7 +402,7 @@ def cic_pk(snapnum,ngrid=512,nruns=320):
         and 'poisson' is a 1-d array of 1/sqrt(N) for N counts in each bin.
     """
     
-    basedir = '/home/idies/workspace/indra/pk/' # need to decide, package with indra-tools or store on /sciserver/vc/indra
+    basedir = '/home/idies/workspace/indra/pk/' 
     k = np.load(f'{basedir}/psbins_ng{ngrid}.npy')
     pk = np.load(f'{basedir}/psvals_ng{ngrid}_s{snapnum}_{nruns}runs.npy')
     err = np.load(f'{basedir}/pserr_ng{ngrid}.npy')
