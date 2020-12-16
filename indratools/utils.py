@@ -181,7 +181,6 @@ def fdb_snaps(runid=None,Container=True,Dask=False,DaskLocal=False):
     else:
         # first get X_Y_Z from runnum, then use it to list snaps; filedb node can be wildcard
         run = Run(runid)
-#        runnum = run.num
         x, y, z = (run.X,run.Y,run.Z)
         runstr = f'{x}_{y}_{z}'
         if Container:
@@ -289,9 +288,14 @@ def fdb_loc(runid):
 
 
 def get_loc(runid,snapnum=None):
-    """Determines directory from which to read simulation snapshot file.
-    Defaults to FileDB location for all halo catalogs and FFT data, and for all snapshots
-    stored on FileDB. Otherwise it returns the datascope location based on ``ds_basedir``.
+    """Determines directory from which to read simulation snapshot file as mounted on
+    SciServer compute containers.
+    
+    If snapnum is not provided, returns FileDB location of input run. Otherwise, checks
+    whether provided runid and snapnum are on FileDB. If not, returns the DataScope 
+    location based on ``ds_basedir``, a global parameter here and in read_indra.py.
+    Thus it returns the FileDB location for all halo catalogs and FFT data and for 
+    all snapshots that are stored on FileDB.
     
     Parameters
     ----------

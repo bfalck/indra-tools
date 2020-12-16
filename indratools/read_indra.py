@@ -4,8 +4,7 @@ Reading functions for the Indra suite of simulations hosted on the SciServer.
 Written by Bridget Falck, 2018-2020
 
 
-TODO: add usage examples?
-TODO: add warning for indra0 and indra1
+TODO: add warning for indra0 and indra1 ?
 
 
 Inputs: 
@@ -73,7 +72,7 @@ ds_basedir = '/home/idies/workspace/indra_dss/'
 # Run/snap combinations with missing subfiles where there are no subhalos anyway:
 MissingFiles_OK = [(3,0,1,1)]
 # Run/snap combinations with missing/empty subfiles where there should be some:
-MissingFiles_Problem = []#[(2,4,2,59)]
+MissingFiles_Problem = []
 
 
 
@@ -138,9 +137,7 @@ def getheader(runid=128,snapnum=0,filenum=0,datadir=None,datascope=False,verbose
 
     filename = '{0}/snapdir_{1:03d}/snapshot_{1:03d}.'.format(datadir,snapnum)
 
-#    f = open(filename+str(0),'rb')
-#    header = _readheader(f)
-#    f.close()
+
     try:
         with open(filename+str(filenum),'rb') as f:
             header = _readheader(f)
@@ -367,10 +364,6 @@ def getfofheader(runid,snapnum,datadir=None,datascope=False,verbose=False):
         print('No file {}'.format(tabfile+str(0)))
         TotNgroups = 0
 
-#    f = open(tabfile+str(0),'rb')
-#    Ngroups, Nids, TotNgroups, NTask = np.fromfile(f, np.int32, 4)
-#    f.close()
-    
     return TotNgroups
 
 def getfof(runid,snapnum,datadir=None,datascope=False,getOffset=False,verbose=False):
@@ -620,7 +613,7 @@ def getsubcat(runid,snapnum,datadir=None,datascope=False,verbose=False):
     if (datadir == None): 
         if (datascope == True): datadir = f'/{ds_basedir}/indra{run.X}/{run.X}_{run.Y}_{run.Z}/'
         else:
-            datadir = get_loc(runid)
+            datadir = get_loc(runid) #snapnum not specified, all files are on FileDB
 
     if (verbose == True): print('Reading from {}'.format(datadir))
     
@@ -820,7 +813,7 @@ def getfft(runid,tnum,datadir=None,datascope=False,verbose=False):
     if (datadir == None): 
         if (datascope == True): datadir = f'/{ds_basedir}/indra{run.X}/{run.X}_{run.Y}_{run.Z}/'
         else:
-            datadir = get_loc(runid)
+            datadir = get_loc(runid) #snapnum not specified, all files are on FileDB
 
     if (verbose == True): print('Reading from {}'.format(datadir))
     
@@ -829,7 +822,6 @@ def getfft(runid,tnum,datadir=None,datascope=False,verbose=False):
     L = 128
     L2 = L//2
 
-#    f = open(filename,'rb')
     # Check that files exist:
     try:
         with open(filename,'rb') as f:

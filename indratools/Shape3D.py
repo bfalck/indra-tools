@@ -80,7 +80,7 @@ class Box():
     """
     def __init__(self,xmin,ymin,zmin,xmax,ymax,zmax):
 
-        # what about PBCs (i.e. box spans boundary)? For now, not allowed
+        # Defined box must be in wrapped-around coordinates, i.e. corners can be < 0 or > box_size
         if ((xmin > xmax) or (ymin > ymax) or (zmin > zmax)):
             raise ValueError("Left-lower point of box must be left-lower from right-upper point; add or subtract L to span periodic boundary.")
         

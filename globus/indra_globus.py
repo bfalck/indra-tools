@@ -1,3 +1,10 @@
+"""
+This code is for people who know what they're doing, e.g. IDIES and SciServer admins, to
+facilitate the transfer of Indra data from DataScope to FileDB or delete from FileDB using Globus.
+
+Written by Bridget Falck, 2020.
+"""
+
 import globus_sdk
 from globus_sdk import TransferClient
 
@@ -15,7 +22,8 @@ class IndraTransfer():
     def __init__(self, token_response):
         '''
         Assume the user has logged in to globus and the jhuidies#dmztest collection, initialized their client, 
-        visited the authentication url, copied the authentication code, and converted it to tokens.
+        visited the authentication url, copied the authentication code, and converted it to tokens, as
+        set up in the accompanying notebook.
         e.g.:
             CLIENT_ID = 'XXXXX'
             client = globus_sdk.NativeAppAuthClient(CLIENT_ID)
@@ -158,7 +166,8 @@ class SimTransfer(IndraTransfer):
     def submit_delete(self, skip_example = 129, for_real = False):
         '''
         Delete main dir files and snapdirs and sub_id files in non-priority snaps, which are determined
-        by checking existing snapdirs in run given by skip_example (deafults to 2_0_1).
+        by checking existing snapdirs in run given by skip_example (deafults to 2_0_1). This means
+        that skip_example only contains priority snapshots and is not complete on FileDB.
         '''
         skipx,skipy,skipz = get_xyz(skip_example)
         skip_floc = self.fd[skip_example % 36]+'{}_{}_{}/'.format(skipx,skipy,skipz)
@@ -196,8 +205,8 @@ class SnapTransfer(IndraTransfer):
     '''
     Transfers full (2_0_0 to 6_7_7 (default) or 7_7_7) set of snapshots to FileDB specified by snapnum.
     Creates task pairs for sub_id files and snapdir folders and assumes sub_tab files already transferred.
-    Assumes directories of specified runs already exist on FileDB (e.g. /cosmo/indra/0_0_0): if that's not the
-    case, do a SeriesTransfer first.
+    Assumes directories of specified runs already exist on FileDB (e.g. /cosmo/indra/0_0_0): if that's 
+    not the case, do a SeriesTransfer first.
     '''
     def __init__(self, token_response, snapnum, include_7 = False, runfirst = None, nruns = None):
         """
@@ -300,7 +309,8 @@ class SnapTransfer(IndraTransfer):
     
     def submit_delete(self, skip_list = [128,192,256,320,384], for_real = False):
         '''
-        Delete snapdirs and sub_id files for one snapnum in specified range of runs, except for those in skip_list (full simulations).
+        Delete snapdirs and sub_id files for one snapnum in specified range of runs, except for 
+        those in skip_list (full simulations).
         '''
         skip_flocs = []
         for run_num in skip_list:
@@ -334,7 +344,7 @@ class SnapTransfer(IndraTransfer):
 class SeriesTransfer(IndraTransfer):
     '''
     Transfers full series of Indra runs (e.g. all 64 7_Y_Z) to appropriate FileDB locations.
-    Assumes no data exists, so first create the parent folders in /cosmo/indra/ with function make_dirs().
+    Assumes no data exists, so first create the parent folders in /cosmo/indra/ with SeriesTransfer.make_dirs().
     Creates task pairs for FFT_DATA folders and sub_tab files, for all runs and snaps, ONLY.
     Note that for the 7 series, this should be done first, and then SnapTransfer for each desired snapnum.
     This should create 256*64(snaps)*64(sims)+64(FFT dirs) = 1048640 task pairs, < 7 million (??) maximum.

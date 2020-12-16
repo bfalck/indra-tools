@@ -5,15 +5,12 @@ are within geometrical shapes defined by Shape3D objects.
 Written by Bridget Falck and Gerard Lemson
 
 
-TO DO: Decide whether to include option to return PH cell data (results of query)
-
-
 Methods
 -------
 
-get_run_num(x,y,z)
-    Helper function to return the raveled run number (0 to 511) from the unraveled
-    x, y, z identifiers (each 0 to 7).
+particlesInShape(runid,snapnum,shape,getvel=False,getIDs=False,datadir=None,datascope=False,verbose=False)
+    Returns particles from given simulation and snapshot that are within shape. If shape crosses 
+    boundary, returned positions are wrapped around, so they can be negative.
 
 """
 
@@ -23,11 +20,11 @@ import SciServer.CasJobs as cj
 import pandas
 
 
-ds_basedir = '/home/idies/workspace/indra_dss/'
+ds_basedir = '/home/idies/workspace/indra_dss/' # as mounted on SciServer Compute containers
 
 
 def _readParticles(file,shift,gr,shape,getvel,getIDs):
-    """Does the actual file reading according to file and PH cell info in gr,
+    """Reads file according to file name and PH cell info in gr,
     then calls shape.contained() to select particles inside the shape."""
     npart = sum(gr['ixcount'].values)
     nalloc = npart*3
@@ -106,7 +103,7 @@ def _retrieveParticles(df,shape,getvel,getIDs):
                 ntot+=len(particles[0])
             else: ntot+=len(particles)
         else:
-            print('No particles found in {0}'.format(k[0])) # maybe don't want to print a message... this occurs when PH cell in shape but individual particles in that cell aren't
+            print('No particles found in {0}'.format(k[0])) # maybe don't want to print a message... this occurs when PH cell is in shape but individual particles in that cell aren't
     
     # re-organize particles (currently grouped by PH cell)
     part = {'NumParticles':ntot,
@@ -194,7 +191,7 @@ def particlesInShape(runid,snapnum,shape,getvel=False,getIDs=False,datadir=None,
           from fGetIndraBins({simId},{snapnum},'{str(shape)}') 
          order by sciserverLocation, shiftx, shifty, shiftz
     """
-    _df = cj.executeQuery(sql,"Indra")
-    part = _retrieveParticles(_df,shape,getvel,getIDs)
+    df = cj.executeQuery(sql,"Indra")
+    part = _retrieveParticles(df,shape,getvel,getIDs)
 
     return part
