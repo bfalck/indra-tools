@@ -1,19 +1,22 @@
 # indra-tools
-This is the code repository for the Indra simulations, hosted on the [SciServer](http://www.sciserver.org).
+This is the code repository for the Indra simulations, hosted on [SciServer](http://www.sciserver.org).
 
-Indra is a suite of large-volume cosmological *N*-body simulations. Each of the 384 simulations is computed with the same cosmological parameters and different initial phases, providing excellent statistics of the large-scale features of the distribution of dark matter in the universe. The independent volumes have 1024<sup>3</sup> dark matter particles in a box of length 1 Gpc/*h*.
+Indra is a suite of large-volume cosmological *N*-body simulations. Each of the 384 (currently 320) simulations is computed with the same WMAP7 cosmological parameters and different initial phases, providing excellent statistics of the large-scale features of the distribution of dark matter in the universe. The independent volumes each have 1024<sup>3</sup> dark matter particles in a box of length 1 Gpc/*h*.
 
 The Indra data volumes contain, for each simulation:
--	64 snapshots of particle positions and velocities
--	64 snapshots of FOF and SUBFIND halo catalogs
--	505 time-steps of coarse-gridded Fourier-space density fields
+- 64 snapshots of particle positions and velocities
+- 64 snapshots of FOF and SUBFIND halo catalogs
+- 505 time-steps of coarse-gridded Fourier-space density fields
 
 The Indra relational database contains:
--	Halo catalog tables for every simulation and snapshot
--	Spatial3D library to allow efficient selection of halos and particle data within 3-dimensional shapes
+- Halo catalog tables for every simulation and snapshot
+- Spatial3D library to allow efficient selection of halos and particle data within 3-dimensional shapes
 
 
-Once it goes public (in January 2021), to access Indra, create an account on [SciServer](http://www.sciserver.org) and join the *Cosmology Domain*. You will then be able to create a Compute container that mounts the Indra data volumes and uses the Indra compute image with this library pre-installed. To install by hand, go to a terminal in a SciServer container (that has the Indra data volumes mounted) and execute:
+Once it goes public (in January 2021), to access Indra, create an account on [SciServer](http://www.sciserver.org) and join the *Cosmological Simulations* Science Domain. You will then be able to create a Compute container that mounts the Indra data volumes and uses the Cosmological Simulations compute image with this library pre-installed. 
+
+To install by hand, go to a terminal in a SciServer container (that has the Indra data volumes mounted) and execute:
+
 `pip install git+https://github.com/bfalck/indra-tools.git`
 
 
