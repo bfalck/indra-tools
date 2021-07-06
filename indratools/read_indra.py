@@ -34,15 +34,18 @@ getparticles(runid,snapnum,datadir=None,datascope=False,sort=False,verbose=False
 
 --- Halo and subhalo data ---
 
-getfofheader(runid,snapnum,datadir=None,datascope=False,verbose=False)
-    Reads the header of the FOF data and returns the total number of FOF 
-    groups contained in all files at this snapshot.
-getsubheader(runid,snapnum,datadir=None,datascope=False,getfof=False,verbose=False)
+getfofheader(runid,snapnum,datadir=None,datascope=False,getNTask=False,verbose=False)
+    Reads the header of the FOF data. Returns the total number of FOF 
+    groups contained in all files of given snapshot, or if getNTask=True, returns
+    the number of output files.
+getsubheader(runid,snapnum,datadir=None,datascope=False,getfof=False,getNTask=False,verbose=False)
     Reads all headers of the SUBFIND files and returns the total number
-    of subhalos (or FOF groups) in all files at this snapshot.
-getfof(runid,snapnum,datadir=None,datascope=False,verbose=False)
-    Reads the number of particles in each FOF group and the Offset array needed to
-    index the IDs of the member particles: groupLen, groupOffset = getfof(...)
+    of subhalos (default) or FOF groups (if getfof=True) or the number of output files
+    (if getNTask=True) for the given snapshot.
+getfof(runid,snapnum,datadir=None,datascope=False,getOffset=False,verbose=False)
+    Reads the number of particles in each FOF group. If getOffset=True, also returns
+    the Offset array needed to index the IDs of the member particles: 
+    groupLen, groupOffset = getfof(...)
 getfofids(runid,snapnum,datadir=None,datascope=False,verbose=False)
     Reads the groupLen, groupOffset, and particle ID arrays for the FOF groups.
 getsubcat(runid,snapnum,datadir=None,datascope=False,verbose=False)
@@ -289,7 +292,6 @@ def getparticles(runid,snapnum,datadir=None,datascope=False,sort=False,verbose=F
 
     #NTask = 256
     # indra7: for some runs and snapshots, NTask is different
-    # Need to read from header['num_files']
     header = getheader(runid,snapnum,datadir=datadir,datascope=datascope)
     NTask = header['num_files']
     nparticles = 1024
