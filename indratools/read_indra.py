@@ -64,8 +64,9 @@ getkvals(L=128)
     with the FFT data. Each are arrays with the same shapes as ``fft_re`` and ``fft_im``.
 """
 
-# package version: from .utils import *
-from utils import *
+# package: from .utils import *
+# dev: from utils import *
+from .utils import *
 import numpy as np
 
 ds_basedir = '/home/idies/workspace/indra_dss/'
@@ -81,6 +82,7 @@ MissingFiles_Problem = []
 def _readheader(f):
     """Utility function for reading Indra snapshot files"""
 
+    # first sanity check: header_size
     if np.fromfile(f,np.int32,1) != 256:
         return None
     header={}
