@@ -34,14 +34,12 @@ getparticles(runid,snapnum,datadir=None,datascope=False,sort=False,verbose=False
 
 --- Halo and subhalo data ---
 
-getfofheader(runid,snapnum,datadir=None,datascope=False,getNTask=False,verbose=False)
+getfofheader(runid,snapnum,datadir=None,datascope=False,verbose=False)
     Reads the header of the FOF data. Returns the total number of FOF 
-    groups contained in all files of given snapshot, or if getNTask=True, returns
-    the number of output files.
-getsubheader(runid,snapnum,datadir=None,datascope=False,getfof=False,getNTask=False,verbose=False)
+    groups contained in all files of given snapshot.
+getsubheader(runid,snapnum,datadir=None,datascope=False,getfof=False,verbose=False)
     Reads all headers of the SUBFIND files and returns the total number
-    of subhalos (default) or FOF groups (if getfof=True) or the number of output files
-    (if getNTask=True) for the given snapshot.
+    of subhalos (default) or FOF groups (if getfof=True) for the given snapshot.
 getfof(runid,snapnum,datadir=None,datascope=False,getOffset=False,verbose=False)
     Reads the number of particles in each FOF group. If getOffset=True, also returns
     the Offset array needed to index the IDs of the member particles: 
@@ -328,7 +326,7 @@ def getparticles(runid,snapnum,datadir=None,datascope=False,sort=False,verbose=F
 Halo and subhalo functions
 """
 
-def getfofheader(runid,snapnum,datadir=None,datascope=False,getNTask=False,verbose=False):
+def getfofheader(runid,snapnum,datadir=None,datascope=False,verbose=False):
     """Reads the FOF header (total number of groups) of an Indra snapshot.
     
     Parameters
@@ -345,16 +343,13 @@ def getfofheader(runid,snapnum,datadir=None,datascope=False,getNTask=False,verbo
     datascope : boolean, optional
         If True, read from /datascope_path/indraX/X_Y_Z/ (default False).
         Ignored if ``datadir`` is set.
-    getNTask : boolean, optional 
-        If true, return NTask instead of TotNgroups (default False)
-        (For example, within reading functions)
     verbose : boolean, optional
         If True, print reading statements (default False).
     
     Returns
     -------
-    TotNgroups (or NTask if getNTask is True) : int
-        Total number of FOF groups in this snapshot over all 256 files.
+    TotNgroups : int
+        Total number of FOF groups in this snapshot.
     """
 
     run = Run(runid)
@@ -376,10 +371,7 @@ def getfofheader(runid,snapnum,datadir=None,datascope=False,getNTask=False,verbo
         print('No file {}'.format(tabfile+str(0)))
         TotNgroups = 0
 
-    if getNTask:
-        return NTask
-    else:
-        return TotNgroups
+    return TotNgroups
 
 def getfof(runid,snapnum,datadir=None,datascope=False,getOffset=False,verbose=False):
     """Reads the FOF group info of an Indra snapshot.
@@ -422,9 +414,16 @@ def getfof(runid,snapnum,datadir=None,datascope=False,getOffset=False,verbose=Fa
     
     tabfile = '{0}/snapdir_{1:03d}/group_tab_{1:03d}.'.format(datadir,snapnum)
 
-    # loop through NTask files
-    NTask = getfofheader(runid,snapnum,datadir,getNTask=True)
-    TotNgroups = getfofheader(runid,snapnum,datadir)
+    # Need NTask (number of files) in case it's not 256, and TotNgroups
+    try:
+        with open(tabfile+str(0),'rb') as f:
+            Ngroups, Nids, TotNgroups, NTask = np.fromfile(f, np.int32, 4)
+    except FileNotFoundError:
+        # doesn't exist
+        print('No file {}'.format(tabfile+str(0)))
+        NTask = 0
+        TotNgroups = 0
+
     # Don't read if no groups...
     if TotNgroups == 0: 
         print("No FOF groups in {}_{}_{} snapshot {}: returning None".format(run.X,run.Y,run.Z,snapnum))
@@ -509,8 +508,15 @@ def getfofids(runid,snapnum,datadir=None,datascope=False,verbose=False):
     idsfile = '{0}/snapdir_{1:03d}/group_ids_{1:03d}.'.format(datadir,snapnum)
  
     # loop through NTask files
-    NTask = getfofheader(runid,snapnum,datadir,getNTask=True)
-    TotNgroups = getfofheader(runid,snapnum,datadir)
+    try:
+        with open(idsfile+str(0),'rb') as f:
+            Ngroups, Nids, TotNgroups, NTask = np.fromfile(f, np.int32, 4)
+    except FileNotFoundError:
+        # doesn't exist
+        print('No file {}'.format(tabfile+str(0)))
+        NTask = 0
+        TotNgroups = 0
+
     # Don't read if no groups...
     if TotNgroups == 0: 
         print("No FOF groups in {}_{}_{} snapshot {}: returning None".format(run.X,run.Y,run.Z,snapnum))
@@ -535,7 +541,7 @@ def getfofids(runid,snapnum,datadir=None,datascope=False,verbose=False):
     
     return groupLen,groupOffset,groupids-1
 
-def getsubheader(runid,snapnum,datadir=None,datascope=False,getfof=False,getNTask=False,verbose=False):
+def getsubheader(runid,snapnum,datadir=None,datascope=False,getfof=False,verbose=False):
     """Reads the SUBFIND header (total number of subhalos) of an Indra snapshot.
     
     Parameters
@@ -555,16 +561,13 @@ def getsubheader(runid,snapnum,datadir=None,datascope=False,getfof=False,getNTas
     getfof : boolean, optional 
         If true, return TotNgroups instead of TotNsubs (default False)
         (For example, when group_tab files not available)
-    getNTask : boolean, optional 
-        If true, return NTask instead of TotNsubs (default False)
-        (For example, within reading functions)
     verbose : boolean, optional
         If True, print reading statements (default False).
     
     Returns
     -------
-    TotNsubs (or TotNgroups if getfof is True, or NTask if getNTask is True) : int
-        Total number of subhalos (or FOF groups) in this snapshot over all 256 files.
+    TotNsubs (or TotNgroups if getfof is True) : int
+        Total number of subhalos or FOF groups in this snapshot.
     """
 
     run = Run(runid)
@@ -588,9 +591,7 @@ def getsubheader(runid,snapnum,datadir=None,datascope=False,getfof=False,getNTas
     Ngroups,Nids,TotNgroups,NTask = np.fromfile(f,np.int32,4)
     f.close()
 
-    # TO DO: make sure that getfof and getNTask are not both True (ambiguous return)
     if getfof: return TotNgroups
-    elif getNTask: return NTask
     else:
         TotNsubs = 0
         for i in np.arange(0,NTask):
@@ -639,8 +640,10 @@ def getsubcat(runid,snapnum,datadir=None,datascope=False,verbose=False):
     
     tabfile = '{0}/postproc_{1:03d}/sub_tab_{1:03d}.'.format(datadir,snapnum)
     
-    NTask = getsubheader(runid,snapnum,datadir,getNTask=True)
-    TotNgroups= getsubheader(runid,snapnum,datadir,getfof=True)
+    # open first file to get NTask just in case (but it should be 256) and TotNgroups
+    f = open(tabfile+str(0),'rb')
+    Ngroups,Nids,TotNgroups,NTask = np.fromfile(f,np.int32,4)
+    f.close()
     TotNsubs = getsubheader(runid,snapnum,datadir)
 
 #    if TotNgroups == 0: return None
@@ -758,7 +761,10 @@ def getsubids(runid,snapnum,datadir=None,datascope=False,verbose=False):
     
     idsfile = '{0}/postproc_{1:03d}/sub_ids_{1:03d}.'.format(datadir,snapnum)
     
-    NTask = getsubheader(runid,snapnum,datadir,getNTask=True)
+    # open first file to get NTask just in case (but it should be 256) and TotNgroups
+    f = open(idsfile+str(0),'rb')
+    Ngroups, Nids, TotNgroups, NTask = np.fromfile(f, np.int32, 4)
+    f.close()
     TotNsubs = getsubheader(runid,snapnum,datadir)
 
     if TotNsubs == 0: 
