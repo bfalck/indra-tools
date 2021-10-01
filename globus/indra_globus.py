@@ -5,6 +5,7 @@ facilitate the transfer of Indra data from DataScope to FileDB or delete from Fi
 Written by Bridget Falck, 2020.
 """
 
+import numpy as np
 import globus_sdk
 from globus_sdk import TransferClient
 
@@ -16,6 +17,16 @@ def get_run_num(x,y,z):
 def get_xyz(run_num):
     '''Helper function to figure out unraveled index from raveled index'''
     return run_num//64, run_num//8 % 8, run_num % 8
+
+def get_NTask(run_num,snapnum):
+    '''Get number of files (usually 256, differs for runs 7_2_[3,5,6,7])'''
+    X, Y, Z = get_xyz(run_num)
+    if (X < 7): return 256
+    elif (Y != 2): return 256
+    elif Z in [3,5,6,7]:
+        NT = np.loadtxt(f'NTask_7_{Y}_{Z}.txt',dtype='int')
+        return NT[snapnum]
+    else: return 256
 
 
 class IndraTransfer():
@@ -93,6 +104,7 @@ class SimTransfer(IndraTransfer):
         super().__init__(token_response)
         self.run_num = run_num
         self.x, self.y, self.z = get_xyz(self.run_num)
+        self.n_subid_tasks = 0
         self.fd = []
         for f in range(8,13):
             for d in range(1,4):
@@ -118,7 +130,9 @@ class SimTransfer(IndraTransfer):
                 print('snapdir_{:03d} exists in {}'.format(snapnum,self.floc))
             else:
                 self.snaptasks.append(('{}snapdir_{:03d}/'.format(self.dloc,snapnum),'{}snapdir_{:03d}/'.format(self.floc,snapnum)))
-                for file in range(256):
+                NTask = get_NTask(self.run_num,snapnum)
+                self.n_subid_tasks += NTask
+                for file in range(NTask):
                     self.subtasks.append(('{0}postproc_{1:03d}/sub_ids_{1:03d}.{2}'.format(self.dloc,snapnum,file),
                                   '{0}postproc_{1:03d}/sub_ids_{1:03d}.{2}'.format(self.floc,snapnum,file)))
 
@@ -133,7 +147,7 @@ class SimTransfer(IndraTransfer):
         Print out sanity checks, e.g., number of task pairs and a few values
         '''
         print("{} snap_dir tasks, {} sub_id tasks, and {} file tasks".format(len(self.snaptasks),len(self.subtasks),len(self.filetasks)))
-        print("Number of sub_id tasks should be {}".format(len(self.snaptasks)*256))
+        print("Number of sub_id tasks should be {}".format(self.n_subid_tasks))
         print("First snap_dir task pair is {}".format(self.snaptasks[0]))
         print("First sub_id task pair is {}".format(self.subtasks[0]))
         print("First file task pair is {}".format(self.filetasks[0]))
@@ -184,7 +198,8 @@ class SimTransfer(IndraTransfer):
                 print('Keeping snapdir_{:03d} in {}'.format(snapnum,self.floc))
             else:
                 snapdata.add_item(('{}snapdir_{:03d}/'.format(self.floc,snapnum))) # recursive = True
-                for file in range(256):
+                NTask = get_NTask(self.run_num,snapnum)
+                for file in range(NTask):
                     filedata.add_item(('{0}postproc_{1:03d}/sub_ids_{1:03d}.{2}'.format(self.floc,snapnum,file)))
         l = [entry['name'] for entry in self.tc.operation_ls(self.jhu_tc['display_name'],path=self.floc) if entry['type'] == 'file']
         for item in l:
@@ -226,6 +241,7 @@ class SnapTransfer(IndraTransfer):
 
         super().__init__(token_response)
         self.snapnum = snapnum
+        self.n_subid_tasks = 0
         self.snapstr = "%03d" % self.snapnum
         if runfirst == None:
             if include_7:
@@ -262,14 +278,16 @@ class SnapTransfer(IndraTransfer):
         self.snaptasks = []
         self.subtasks = []
 
-        for i in range(self.nruns): 
+        for i, run_num in enumerate(range(self.runfirst,self.runfirst+self.nruns)): 
             p = self.flocs[i]
             l=[entry["name"] for entry in self.tc.operation_ls(self.jhu_tc['display_name'], path=p) if entry['type'] == 'dir']
             if 'snapdir_{}'.format(self.snapstr) in l:
                 print('snapdir_{} exists in {}'.format(self.snapstr,p))
             else:
                 self.snaptasks.append(('{}snapdir_{}/'.format(self.dlocs[i],self.snapstr),'{}snapdir_{}/'.format(p,self.snapstr)))
-                for file in range(256):
+                NTask = get_NTask(run_num,self.snapnum)
+                self.n_subid_tasks += NTask
+                for file in range(NTask):
                     self.subtasks.append(('{0}postproc_{1}/sub_ids_{1}.{2}'.format(self.dlocs[i],self.snapstr,file),
                                   '{0}postproc_{1}/sub_ids_{1}.{2}'.format(self.flocs[i],self.snapstr,file)))
     
@@ -279,7 +297,7 @@ class SnapTransfer(IndraTransfer):
         Print out sanity checks, e.g., number of task pairs and a few values
         '''
         print("{} snap_dir tasks and {} sub_id tasks".format(len(self.snaptasks),len(self.subtasks)))
-        print("Number of sub_id tasks should be {}".format(len(self.snaptasks)*256))
+        print("Number of sub_id tasks should be {}".format(self.n_subid_tasks))
         print("First snap_dir task pair is {}".format(self.snaptasks[0]))
         print("First sub_id task pair is {}".format(self.subtasks[0]))
         print("Last snap_dir task pair is {}".format(self.snaptasks[-1]))
@@ -321,13 +339,14 @@ class SnapTransfer(IndraTransfer):
         snapdata = globus_sdk.DeleteData(self.tc, self.jhu_endpoint,label='Indra_delete_snap_{}_dirs'.format(self.snapstr),recursive=True)
         filedata = globus_sdk.DeleteData(self.tc, self.jhu_endpoint,label='Indra_delete_snap_{}_files'.format(self.snapstr))
         
-        for i in range(self.nruns): 
+        for i, run_num in enumerate(range(self.runfirst,self.runfirst+self.nruns)): 
             p = self.flocs[i]
             if p in skip_flocs:
                 print('Keeping snapdir_{} in {}'.format(self.snapstr,p))
             else:
                 snapdata.add_item(('{}snapdir_{}/'.format(p,self.snapstr)))
-                for file in range(256):
+                NTask = get_NTask(run_num,self.snapnum)
+                for file in range(NTask):
                     filedata.add_item(('{0}postproc_{1}/sub_ids_{1}.{2}'.format(p,self.snapstr,file)))
         
         if for_real:
@@ -363,6 +382,7 @@ class SeriesTransfer(IndraTransfer):
         self.series_num = series_num
         self.runfirst = self.series_num*64
         self.nruns = 64
+        self.n_subtab_tasks = 0
         
         fd = []
         for f in range(8,13):
@@ -409,7 +429,9 @@ class SeriesTransfer(IndraTransfer):
             l=[entry["name"] for entry in self.tc.operation_ls(self.jhu_tc['display_name'], path=p) if entry['type'] == 'dir']
             for snapnum in range(64):
                 if 'postproc_{:03d}'.format(snapnum) not in l: # skip directory if exists, but don't print it out
-                    for file in range(256):
+                    NTask = get_NTask(self.runfirst+i,snapnum)
+                    self.n_subtab_tasks += NTask
+                    for file in range(NTask):
                         self.tabtasks.append(('{0}postproc_{1:03d}/sub_tab_{1:03d}.{2}'.format(self.dlocs[i],snapnum,file),
                                   '{0}postproc_{1:03d}/sub_tab_{1:03d}.{2}'.format(self.flocs[i],snapnum,file)))
     
@@ -419,7 +441,7 @@ class SeriesTransfer(IndraTransfer):
         Print out sanity checks, e.g., number of task pairs and a few values
         '''
         print("{} fft tasks and {} sub_tab tasks".format(len(self.ffttasks),len(self.tabtasks)))
-        print("Number of sub_tab tasks should be {}".format(self.nruns*256*64))
+        print("Number of sub_tab tasks should be {}".format(self.n_subtab_tasks))
         print("First fft task pair is {}".format(self.ffttasks[0]))
         print("First sub_tab task pair is {}".format(self.tabtasks[0]))
         print("Last fft task pair is {}".format(self.ffttasks[-1]))
