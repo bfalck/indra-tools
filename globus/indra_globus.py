@@ -366,7 +366,8 @@ class SeriesTransfer(IndraTransfer):
     Assumes no data exists, so first create the parent folders in /cosmo/indra/ with SeriesTransfer.make_dirs().
     Creates task pairs for FFT_DATA folders and sub_tab files, for all runs and snaps, ONLY.
     Note that for the 7 series, this should be done first, and then SnapTransfer for each desired snapnum.
-    This should create 256*64(snaps)*64(sims)+64(FFT dirs) = 1048640 task pairs, < 7 million (??) maximum.
+    This creates roughly 256*64(snaps)*64(sims)+64(FFT dirs) = 1048640 task pairs, which is too many...
+    Split into multiple transfers: fft, and one sub_tab transfer for each run in series (64).
     '''
     def __init__(self, token_response, series_num):
         """
@@ -427,46 +428,61 @@ class SeriesTransfer(IndraTransfer):
         for i in range(self.nruns):
             p = self.flocs[i]
             l=[entry["name"] for entry in self.tc.operation_ls(self.jhu_tc['display_name'], path=p) if entry['type'] == 'dir']
+            runtasks = []
             for snapnum in range(64):
                 if 'postproc_{:03d}'.format(snapnum) not in l: # skip directory if exists, but don't print it out
                     NTask = get_NTask(self.runfirst+i,snapnum)
                     self.n_subtab_tasks += NTask
                     for file in range(NTask):
-                        self.tabtasks.append(('{0}postproc_{1:03d}/sub_tab_{1:03d}.{2}'.format(self.dlocs[i],snapnum,file),
+                        runtasks.append(('{0}postproc_{1:03d}/sub_tab_{1:03d}.{2}'.format(self.dlocs[i],snapnum,file),
                                   '{0}postproc_{1:03d}/sub_tab_{1:03d}.{2}'.format(self.flocs[i],snapnum,file)))
+            self.tabtasks.append(runtasks)
     
     
     def sanity_checks(self):
         '''
         Print out sanity checks, e.g., number of task pairs and a few values
         '''
-        print("{} fft tasks and {} sub_tab tasks".format(len(self.ffttasks),len(self.tabtasks)))
+        print("{} fft tasks and {} sub_tab transfers".format(len(self.ffttasks),len(self.tabtasks)))
+        print("{} sub_tab tasks in first transfer".format(len(self.tabtasks[0])))
         print("Number of sub_tab tasks should be {}".format(self.n_subtab_tasks))
         print("First fft task pair is {}".format(self.ffttasks[0]))
-        print("First sub_tab task pair is {}".format(self.tabtasks[0]))
+        print("First sub_tab task pair is {}".format(self.tabtasks[0][0]))
         print("Last fft task pair is {}".format(self.ffttasks[-1]))
-        print("Last sub_tab task pair is {}".format(self.tabtasks[-1]))
+        print("Last sub_tab task pair is {}".format(self.tabtasks[-1][-1]))
         
     
     
     def submit_transfer(self, for_real = False):
         '''
-        Submit tasks pairs to the transfer client
+        Submit tasks pairs to the transfer client: one transfer for the FFT data, 
+        and one sub_tab transfer for each run in the series.
         '''
-        tlabel = "Indra_{}".format(self.series_num)
-        tdata = globus_sdk.TransferData(self.tc, self.jhu_endpoint,self.jhu_endpoint,
-                            label=tlabel,sync_level="checksum")
+        tlabel_fft = "Indra_{}_FFT".format(self.series_num)
+        tdata_fft = globus_sdk.TransferData(self.tc, self.jhu_endpoint,self.jhu_endpoint,
+                            label=tlabel_fft,sync_level="checksum")
         for task in self.ffttasks:
-            tdata.add_item(task[0],task[1],recursive=True) # set recursive = True to transfer folders
-        for task in self.tabtasks:
-            tdata.add_item(task[0],task[1])
+            tdata_fft.add_item(task[0],task[1],recursive=True) # set recursive = True to transfer folders
+
+        tdata_sub = []
+        for i in range(len(self.tabtasks)):
+            X,Y,Z = get_xyz(self.runfirst+i)
+            tlabel_sub = "Indra_{}_{}_{}_sub_tab".format(X,Y,Z)
+            tdata = globus_sdk.TransferData(self.tc, self.jhu_endpoint,self.jhu_endpoint,
+                                label=tlabel_sub,sync_level="checksum")
+            for task in self.tabtasks[i]:
+                tdata.add_item(task[0],task[1])
+            tdata_sub.append(tdata)
 
         if for_real:
-            transfer_result = self.tc.submit_transfer(tdata)
-            print("Transfer {} submitted!".format(tlabel))
+            transfer_result = self.tc.submit_transfer(tdata_fft)
+            print("Transfer {} submitted!".format(tlabel_fft))
+            for i in range(len(tdata_sub)):
+                transfer_result = self.tc.submit_transfer(tdata_sub[i])
+                print("Transfer {} submitted!".format(tdata_sub[i]['label']))
         else:
-            print("Transfer {} not submitted (set for_real=True to submit). Returning tdata.".format(tlabel))
-            return tdata
+            print("Transfers not submitted (set for_real=True to submit). Returning (tdata_fft, tdata_sub).")
+            return tdata_fft, tdata_sub
 
     
     def submit_delete(self, for_real = False):
