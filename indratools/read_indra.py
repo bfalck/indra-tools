@@ -4,8 +4,6 @@ Reading functions for the Indra suite of simulations hosted on SciServer.
 Written by Bridget Falck, 2018-2021
 
 
-TO DO: add warning for indra0 and indra1 ?
-
 
 Inputs: 
 - ``runid`` specifies the Indra run, and is ignored if a ``datadir`` is specified; 

@@ -102,17 +102,17 @@ def get_xyz(run_num):
 
 class Run:
     """
-    Specifies the current Indra simulation as both a number (from 0 to 511) 
-    and 3 integers, X_Y_Z (each go from 0 to 7), corresponding to the 
+    Specifies the current Indra simulation as both a number (from 128 to 511) 
+    and 3 integers, X_Y_Z (each from 0 to 7), corresponding to the 
     raveled and unraveled indices of an 8x8x8 cube. Instantiated with either
     the number or the 3 integers as a tuple.
     
     Attributes
     ----------
     num : int
-        The ID of the run as an integer, from 0 to 511
+        The ID of the run as an integer, from 128 to 511
     X : int
-        The first integer of run X_Y_Z, from 0 to 7
+        The first integer of run X_Y_Z, from 2 to 7
     Y : int
         The second integer of run X_Y_Z, from 0 to 7
     Z : int
@@ -135,6 +135,10 @@ class Run:
         elif isinstance(runid, tuple):
             self.X, self.Y, self.Z = runid
             self.num = get_run_num(self.X,self.Y,self.Z)
+        else: 
+            raise TypeError("Enter runid as tuple of (X, Y, Z) or integer between 128 and 511.")
+        if ((self.num < 128) or (self.num > 511)):
+            raise ValueError("First 128 runs not available; set runid between 128 (2,0,0) and 511 (7,7,7).")
 
     
 def fdb_snaps(runid=None,Container=True,Dask=False,DaskLocal=False):
