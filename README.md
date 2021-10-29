@@ -12,8 +12,10 @@ The Indra relational database contains:
 - Halo catalog tables for every simulation and snapshot
 - Spatial3D library to allow efficient selection of halos and particle data within 3-dimensional shapes
 
+## Getting Started
+To access Indra, create an account on [SciServer](http://www.sciserver.org) and join the *Cosmological Simulations* Science Domain. Then, from the SciServer *Dashboard*, navigate to *Compute* and create a container: select the *Cosmological Simulations* compute image and mount all three Indra *Data Volumes*. 
 
-To access Indra, create an account on [SciServer](http://www.sciserver.org) and join the *Cosmological Simulations* Science Domain. Then, from the SciServer *Dashboard*, navigate to *Compute* and create a container: select the *Cosmological Simulations* compute image and mount all three Indra *Data Volumes*. The *Cosmological Simulations* compute image comes with this library pre-installed plus all software on the default *SciServer Essentials* image. 
+The *Cosmological Simulations* compute image comes with this library pre-installed plus all software on the default *SciServer Essentials* image. 
 
 To install by hand, go to a terminal in a SciServer container (that has the Indra data volumes mounted) and execute:
 
@@ -29,5 +31,8 @@ Example notebooks are provided that demonstrate how to:
 
 These notebooks can be found in the main *Indra* data volume from within a compute container. Copy them to your *persistent* home directory to use and edit. 
 
+
+## Reference
+indra-tools is licensed under a 3-clause BSD style license.
 
 We ask that scientific publications that make use of Indra cite the Falck, et al. 2021 [data release paper](https://arxiv.org/abs/2101.03631) (Falck, et al. 2021, MNRAS, 506, 2659).
