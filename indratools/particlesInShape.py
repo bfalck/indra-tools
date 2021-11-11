@@ -4,14 +4,6 @@ are within geometrical shapes defined by Shape3D objects.
 
 Written by Bridget Falck and Gerard Lemson
 
-
-Methods
--------
-
-particlesInShape(runid,snapnum,shape,getvel=False,getIDs=False,datadir=None,datascope=False,verbose=False)
-    Returns particles from given simulation and snapshot that are within shape. If shape crosses 
-    boundary, returned positions are wrapped around, so they can be negative.
-
 """
 
 from .utils import *
@@ -140,32 +132,33 @@ def particlesInShape(runid,snapnum,shape,getvel=False,getIDs=False,datadir=None,
     Parameters
     ----------
     runid : int or tuple
-        Specifies the Indra run either as an integer from 0 to 511
-        or as a length 3 tuple giving the 3-digit ID as (X,Y,Z)
-        where X, Y, and Z each go from 0 to 7.
+        Specifies the Indra run either as an integer from 128 to 511
+        or as a length 3 tuple giving the 3-digit ID as (`X`,`Y`,`Z`)
+        where `X` goes from 2 to 7 and `Y` and `Z` each go from 0 to 7.
+        Ignored if `datadir` is set.
     snapnum : int
         Which snapshot to read (0 to 63).
-    shape : Shape3D object
-        A Box, Sphere, Cone, or ConeSegment object as defined in Shape3D.py
+    shape : `Shape3D` object
+        A `Box`, `Sphere`, `Cone`, or `ConeSegment` object as defined in Shape3D.py
     getvel : bool (default False)
         Whether to read and return velocities in addition to positions.
     getIDs : bool (default False)
         Whether to read and return particle IDs in addition to positions.
     datadir : string, optional
-        If set, specify full path of directory containing simulation X_Y_Z.
+        If set, specify full path of directory containing simulation ``X_Y_Z``.
         Default is to read from the output of ``get_loc(runid)``.
     datascope : boolean, optional
-        If True, read from /datascope_path/indraX/X_Y_Z/ (default False).
-        Ignored if ``datadir`` is set.
+        If True, read from ``/datascope_path/indraX/X_Y_Z/`` (default False).
+        Ignored if `datadir` is set.
     verbose : boolean, optional
         If True, print reading statements (default False).
 
     Returns
     -------
-    dict of {'NumParticles': int; 'x','y','z' [,'vx','vy','vz','ids'] : ndarrays}
-        Requested information about the particles in the shape. Velocities and
-        IDs only returned if getvel or getIDs are set to True. All arrays have
-        length 'NumParticles'.
+    dictionary
+        Requested information about the particles in the shape: `NumParticles`, `x`,`y`,`z` [,`vx`,`vy`,`vz`,`ids`]. 
+        Velocities and IDs only returned if getvel or getIDs are set to True. All arrays have
+        length `NumParticles`.
     """
 
     run = Run(runid)

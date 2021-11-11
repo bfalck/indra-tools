@@ -1,65 +1,36 @@
 """
 Reading functions for the Indra suite of simulations hosted on SciServer.
 
-Written by Bridget Falck, 2018-2021
+**Snapshot functions:**
 
-
-
-Inputs: 
-- ``runid`` specifies the Indra run, and is ignored if a ``datadir`` is specified; 
-    it is either an integer from 0 to 511 or a tuple containing (``X``,``Y``,``Z``)
-- ``datadir`` defaults to the FileDB location of run ``X_Y_Z`` if it is there and
-    the DataScope location if not. If ``datadir`` is not set and ``datascope=True``,
-    the ``datadir`` will be the datascope location of run ``X_Y_Z`` (as mounted on 
-    a SciServer container).
-- ``snapnum`` goes from 0 to 63
-- ``tnum`` goes from 0 to 504 for the FFT data
-
-
-Methods
--------
-
---- Snapshots ---
-
-getheader(runid=128,snapnum=0,filenum=0,datadir=None,datascope=False,verbose=False)
-    Reads and returns a dictionary of header parameters.
-getpos(runid,snapnum,datadir=None,datascope=False,verbose=False)
-    Reads and returns an array of particle positions of shape [1024**3,3]
+- getheader: Returns a dictionary of header parameters.
+- getpos: Returns an array of particle positions of shape ``[1024**3,3]``
     from one full snapshot.
-getparticles(runid,snapnum,datadir=None,datascope=False,sort=False,verbose=False)
-    Reads particle positions, velocities, and IDs: pos, vel, ids = getparticles(...).
-    pos and vel are arrays of shape [1024**3,3], and ids have shape [1024**3].
+- getparticles: Returns particle positions, velocities, and IDs: ``pos, vel, ids = getparticles(...)``.
+    `pos` and `vel` are arrays of shape ``[1024**3,3]``, and `ids` have shape ``[1024**3]``.
 
---- Halo and subhalo data ---
+**Halo and subhalo functions:**
 
-getfofheader(runid,snapnum,datadir=None,datascope=False,verbose=False)
-    Reads the header of the FOF data. Returns the total number of FOF 
+- getfofheader: Reads the header of the FOF data. Returns the total number of FOF 
     groups contained in all files of given snapshot.
-getsubheader(runid,snapnum,datadir=None,datascope=False,getfof=False,verbose=False)
-    Reads all headers of the SUBFIND files and returns the total number
-    of subhalos (default) or FOF groups (if getfof=True) for the given snapshot.
-getfof(runid,snapnum,datadir=None,datascope=False,getOffset=False,verbose=False)
-    Reads the number of particles in each FOF group. If getOffset=True, also returns
+- getsubheader: Reads all headers of the SUBFIND files and returns the total number
+    of subhalos (default) or FOF groups (if `getfof`=True) for the given snapshot.
+- getfof: Reads the number of particles in each FOF group. If `getOffset`=True, also returns
     the Offset array needed to index the IDs of the member particles: 
-    groupLen, groupOffset = getfof(...)
-getfofids(runid,snapnum,datadir=None,datascope=False,verbose=False)
-    Reads the groupLen, groupOffset, and particle ID arrays for the FOF groups.
-getsubcat(runid,snapnum,datadir=None,datascope=False,verbose=False)
-    Reads the SUBFIND subhalo catalogs and returns a dictionary of values. Some halo 
+    ``groupLen, groupOffset = getfof(...)``
+- getfofids: Reads the `groupLen`, `groupOffset`, and particle ID arrays for the FOF groups.
+- getsubcat: Reads the SUBFIND subhalo catalogs and returns a dictionary of values. Some halo 
     properties are defined for each FOF group, and some for each subhalo. The
-    dictionary contains the subLen and subOffset arrays needed to index the IDs
+    dictionary contains the `subLen` and `subOffset` arrays needed to index the IDs
     of the subhalo member particles (as for the FOF groups).
-getsubids(runid,snapnum,datadir=None,datascope=False,verbose=False)
-    Reads and returns the IDs of the particles in each subhalo.
+- getsubids: Reads and returns the IDs of the particles in each subhalo.
 
---- FFT data ---
+**FFT functions:**
 
-getfft(runid,tnum,datadir=None,datascope=False,verbose=False)
-    Reads and returns the real and imaginary components of the Fourier-space density
-    grid at output ``tnum`` and returns the scalefactor of this ``tnum``.
-getkvals(L=128) 
-    Builds and returns the x, y, and z components of the k-vectors associated
-    with the FFT data. Each are arrays with the same shapes as ``fft_re`` and ``fft_im``.
+- getfft: Reads and returns the real and imaginary components of the Fourier-space density
+    grid at output `tnum` and returns the scalefactor of this `tnum`.
+- getkvals: Builds and returns the *x*, *y*, and *z* components of the *k*-vectors associated
+    with the FFT data. Each are arrays with the same shapes as `fft_re` and `fft_im`.
 """
 
 # package: from .utils import *
@@ -107,17 +78,18 @@ def getheader(runid=128,snapnum=0,filenum=0,datadir=None,datascope=False,verbose
     Parameters
     ----------
     runid : int or tuple
-        Specifies the Indra run either as an integer from 0 to 511
-        or as a length 3 tuple giving the 3-digit ID as (X,Y,Z)
-        where X, Y, and Z each go from 0 to 7.
+        Specifies the Indra run either as an integer from 128 to 511
+        or as a length 3 tuple giving the 3-digit ID as (`X`,`Y`,`Z`)
+        where `X` goes from 2 to 7 and `Y` and `Z` each go from 0 to 7.
+        Ignored if `datadir` is set.
     snapnum : int
         Which snapshot to read (0 to 63).
     datadir : string, optional
-        If set, specify full path of directory containing simulation X_Y_Z.
+        If set, specify full path of directory containing simulation `X_Y_Z`.
         Default is to read from the output of ``get_loc(runid,snapnum)``.
     datascope : boolean, optional
-        If True, read from /datascope_path/indraX/X_Y_Z/ (default False).
-        Ignored if ``datadir`` is set.
+        If True, read from ``/datascope_path/indraX/X_Y_Z/`` (default False).
+        Ignored if `datadir` is set.
     verbose : boolean, optional
         If True, print reading statements (default False).
     
@@ -150,7 +122,7 @@ def getheader(runid=128,snapnum=0,filenum=0,datadir=None,datascope=False,verbose
     return header
 
 def _readpos(f,npfile):
-    """Utility function for ``getpos()``"""
+    """Utility function for `getpos()`"""
     
     thispos = np.fromfile(f,np.float32,3*npfile)
     thispos = np.reshape(thispos, [npfile, 3])
@@ -158,7 +130,7 @@ def _readpos(f,npfile):
     return thispos
 
 def _readsnap(f,npfile):
-    """Utility function for ``getparticles()``"""
+    """Utility function for `getparticles()`"""
     
     thispos = _readpos(f,npfile)
     empty = np.fromfile(f,np.int32,2)
@@ -175,24 +147,25 @@ def getpos(runid,snapnum,datadir=None,datascope=False,verbose=False):
     Parameters
     ----------
     runid : int or tuple
-        Specifies the Indra run either as an integer from 0 to 511
-        or as a length 3 tuple giving the 3-digit ID as (X,Y,Z)
-        where X, Y, and Z each go from 0 to 7.
+        Specifies the Indra run either as an integer from 128 to 511
+        or as a length 3 tuple giving the 3-digit ID as (`X`,`Y`,`Z`)
+        where `X` goes from 2 to 7 and `Y` and `Z` each go from 0 to 7.
+        Ignored if `datadir` is set.
     snapnum : int
         Which snapshot to read (0 to 63).
     datadir : string, optional
-        If set, specify full path of directory containing simulation X_Y_Z.
+        If set, specify full path of directory containing simulation `X_Y_Z`.
         Default is to read from the output of ``get_loc(runid,snapnum)``.
     datascope : boolean, optional
-        If True, read from /datascope_path/indraX/X_Y_Z/ (default False).
-        Ignored if ``datadir`` is set.
+        If True, read from ``/datascope_path/indraX/X_Y_Z/`` (default False).
+        Ignored if `datadir` is set.
     verbose : boolean, optional
         If True, print reading statements (default False).
     
     Returns
     -------
     pos : ndarray
-        Particle positions (in Mpc/h) in array of shape [1024**3,3]
+        Particle positions (in Mpc/*h*) in array of shape ``[1024**3,3]``
     """
 
     run = Run(runid)
@@ -243,17 +216,18 @@ def getparticles(runid,snapnum,datadir=None,datascope=False,sort=False,verbose=F
     Parameters
     ----------
     runid : int or tuple
-        Specifies the Indra run either as an integer from 0 to 511
-        or as a length 3 tuple giving the 3-digit ID as (X,Y,Z)
-        where X, Y, and Z each go from 0 to 7.
+        Specifies the Indra run either as an integer from 128 to 511
+        or as a length 3 tuple giving the 3-digit ID as (`X`,`Y`,`Z`)
+        where `X` goes from 2 to 7 and `Y` and `Z` each go from 0 to 7.
+        Ignored if `datadir` is set.
     snapnum : int
         Which snapshot to read (0 to 63).
     datadir : string, optional
-        If set, specify full path of directory containing simulation X_Y_Z.
+        If set, specify full path of directory containing simulation `X_Y_Z`.
         Default is to read from the output of ``get_loc(runid,snapnum)``.
     datascope : boolean, optional
-        If True, read from /datascope_path/indraX/X_Y_Z/ (default False).
-        Ignored if ``datadir`` is set.
+        If True, read from ``/datascope_path/indraX/X_Y_Z/`` (default False).
+        Ignored if `datadir` is set.
     sort : boolean, optional
         If True, sort the positions and velocities by the particle IDs.
         The sorting is done on-the-fly to minimize reading time.
@@ -263,9 +237,9 @@ def getparticles(runid,snapnum,datadir=None,datascope=False,sort=False,verbose=F
     Returns
     -------
     pos, vel, ids : tuple of ndarrays
-        Particle positions (in Mpc/h) and velocities (in km/s) in arrays of 
-        shape [1024**3,3] and IDs in array of shape [1024**3]. If ``sort==True``,
-        ID array is equivalent to ``np.arange(1024**3)``.
+        Particle positions (in Mpc/*h*) and velocities (in km/s) in arrays of 
+        shape ``[1024**3,3]`` and IDs in array of shape ``[1024**3]``. If `sort`=True,
+        ID array is equivalent to ``numpy.arange(1024**3)``.
     """
 
     run = Run(runid)
@@ -332,17 +306,18 @@ def getfofheader(runid,snapnum,datadir=None,datascope=False,verbose=False):
     Parameters
     ----------
     runid : int or tuple
-        Specifies the Indra run either as an integer from 0 to 511
-        or as a length 3 tuple giving the 3-digit ID as (X,Y,Z)
-        where X, Y, and Z each go from 0 to 7.
+        Specifies the Indra run either as an integer from 128 to 511
+        or as a length 3 tuple giving the 3-digit ID as (`X`,`Y`,`Z`)
+        where `X` goes from 2 to 7 and `Y` and `Z` each go from 0 to 7.
+        Ignored if `datadir` is set.
     snapnum : int
         Which snapshot to read (0 to 63).
     datadir : string, optional
-        If set, specify full path of directory containing simulation X_Y_Z.
+        If set, specify full path of directory containing simulation `X_Y_Z`.
         Default is to read from the output of ``get_loc(runid,snapnum)``.
     datascope : boolean, optional
-        If True, read from /datascope_path/indraX/X_Y_Z/ (default False).
-        Ignored if ``datadir`` is set.
+        If True, read from ``/datascope_path/indraX/X_Y_Z/`` (default False).
+        Ignored if `datadir` is set.
     verbose : boolean, optional
         If True, print reading statements (default False).
     
@@ -379,26 +354,27 @@ def getfof(runid,snapnum,datadir=None,datascope=False,getOffset=False,verbose=Fa
     Parameters
     ----------
     runid : int or tuple
-        Specifies the Indra run either as an integer from 0 to 511
-        or as a length 3 tuple giving the 3-digit ID as (X,Y,Z)
-        where X, Y, and Z each go from 0 to 7.
+        Specifies the Indra run either as an integer from 128 to 511
+        or as a length 3 tuple giving the 3-digit ID as (`X`,`Y`,`Z`)
+        where `X` goes from 2 to 7 and `Y` and `Z` each go from 0 to 7.
+        Ignored if `datadir` is set.
     snapnum : int
         Which snapshot to read (0 to 63).
     datadir : string, optional
-        If set, specify full path of directory containing simulation X_Y_Z.
+        If set, specify full path of directory containing simulation `X_Y_Z`.
         Default is to read from the output of ``get_loc(runid,snapnum)``.
     datascope : boolean, optional
-        If True, read from /datascope_path/indraX/X_Y_Z/ (default False).
-        Ignored if ``datadir`` is set.
+        If True, read from ``/datascope_path/indraX/X_Y_Z/`` (default False).
+        Ignored if `datadir` is set.
     getOffset : boolean, optional
-        If True, returns groupLen, groupOffset, otherwise just groupLen (default False)
+        If True, returns `groupLen`, `groupOffset`, otherwise just `groupLen` (default False)
     verbose : boolean, optional
         If True, print reading statements (default False).
     
     Returns
     -------
     groupLen (, groupOffset) : ndarray or tuple of ndarrays
-        Number of particles in each FOF group, and if getOffset = True,
+        Number of particles in each FOF group, and if `getOffset` = True,
         Offset array needed in order to index the IDs of the group's 
         constituent particles.
     """
@@ -474,17 +450,18 @@ def getfofids(runid,snapnum,datadir=None,datascope=False,verbose=False):
     Parameters
     ----------
     runid : int or tuple
-        Specifies the Indra run either as an integer from 0 to 511
-        or as a length 3 tuple giving the 3-digit ID as (X,Y,Z)
-        where X, Y, and Z each go from 0 to 7.
+        Specifies the Indra run either as an integer from 128 to 511
+        or as a length 3 tuple giving the 3-digit ID as (`X`,`Y`,`Z`)
+        where `X` goes from 2 to 7 and `Y` and `Z` each go from 0 to 7.
+        Ignored if `datadir` is set.
     snapnum : int
         Which snapshot to read (0 to 63).
     datadir : string, optional
-        If set, specify full path of directory containing simulation X_Y_Z.
+        If set, specify full path of directory containing simulation `X_Y_Z`.
         Default is to read from the output of ``get_loc(runid,snapnum)``.
     datascope : boolean, optional
-        If True, read from /datascope_path/indraX/X_Y_Z/ (default False).
-        Ignored if ``datadir`` is set.
+        If True, read from ``/datascope_path/indraX/X_Y_Z/`` (default False).
+        Ignored if `datadir` is set.
     verbose : boolean, optional
         If True, print reading statements (default False).
     
@@ -547,26 +524,27 @@ def getsubheader(runid,snapnum,datadir=None,datascope=False,getfof=False,verbose
     Parameters
     ----------
     runid : int or tuple
-        Specifies the Indra run either as an integer from 0 to 511
-        or as a length 3 tuple giving the 3-digit ID as (X,Y,Z)
-        where X, Y, and Z each go from 0 to 7.
+        Specifies the Indra run either as an integer from 128 to 511
+        or as a length 3 tuple giving the 3-digit ID as (`X`,`Y`,`Z`)
+        where `X` goes from 2 to 7 and `Y` and `Z` each go from 0 to 7.
+        Ignored if `datadir` is set.
     snapnum : int
         Which snapshot to read (0 to 63).
     datadir : string, optional
-        If set, specify full path of directory containing simulation X_Y_Z.
-        Default is to read from the output of ``get_loc(runid)``.
+        If set, specify full path of directory containing simulation `X_Y_Z`.
+        Default is to read from the output of ``get_loc(runid,snapnum)``.
     datascope : boolean, optional
-        If True, read from /datascope_path/indraX/X_Y_Z/ (default False).
-        Ignored if ``datadir`` is set.
+        If True, read from ``/datascope_path/indraX/X_Y_Z/`` (default False).
+        Ignored if `datadir` is set.
     getfof : boolean, optional 
-        If true, return TotNgroups instead of TotNsubs (default False)
-        (For example, when group_tab files not available)
+        If true, return `TotNgroups` instead of `TotNsubs` (default False).
+        (For example, when group_tab files are not available).
     verbose : boolean, optional
         If True, print reading statements (default False).
     
     Returns
     -------
-    TotNsubs (or TotNgroups if getfof is True) : int
+    TotNsubs (or TotNgroups if `getfof` is True) : int
         Total number of subhalos or FOF groups in this snapshot.
     """
 
@@ -609,17 +587,18 @@ def getsubcat(runid,snapnum,datadir=None,datascope=False,verbose=False):
     Parameters
     ----------
     runid : int or tuple
-        Specifies the Indra run either as an integer from 0 to 511
-        or as a length 3 tuple giving the 3-digit ID as (X,Y,Z)
-        where X, Y, and Z each go from 0 to 7.
+        Specifies the Indra run either as an integer from 128 to 511
+        or as a length 3 tuple giving the 3-digit ID as (`X`,`Y`,`Z`)
+        where `X` goes from 2 to 7 and `Y` and `Z` each go from 0 to 7.
+        Ignored if `datadir` is set.
     snapnum : int
         Which snapshot to read (0 to 63).
     datadir : string, optional
-        If set, specify full path of directory containing simulation X_Y_Z.
-        Default is to read from the output of ``get_loc(runid)``.
+        If set, specify full path of directory containing simulation `X_Y_Z`.
+        Default is to read from the output of ``get_loc(runid,snapnum)``.
     datascope : boolean, optional
-        If True, read from /datascope_path/indraX/X_Y_Z/ (default False).
-        Ignored if ``datadir`` is set.
+        If True, read from ``/datascope_path/indraX/X_Y_Z/`` (default False).
+        Ignored if `datadir` is set.
     verbose : boolean, optional
         If True, print reading statements (default False).
     
@@ -730,17 +709,18 @@ def getsubids(runid,snapnum,datadir=None,datascope=False,verbose=False):
     Parameters
     ----------
     runid : int or tuple
-        Specifies the Indra run either as an integer from 0 to 511
-        or as a length 3 tuple giving the 3-digit ID as (X,Y,Z)
-        where X, Y, and Z each go from 0 to 7.
+        Specifies the Indra run either as an integer from 128 to 511
+        or as a length 3 tuple giving the 3-digit ID as (`X`,`Y`,`Z`)
+        where `X` goes from 2 to 7 and `Y` and `Z` each go from 0 to 7.
+        Ignored if `datadir` is set.
     snapnum : int
         Which snapshot to read (0 to 63).
     datadir : string, optional
-        If set, specify full path of directory containing simulation X_Y_Z.
+        If set, specify full path of directory containing simulation `X_Y_Z`.
         Default is to read from the output of ``get_loc(runid,snapnum)``.
     datascope : boolean, optional
-        If True, read from /datascope_path/indraX/X_Y_Z/ (default False).
-        Ignored if ``datadir`` is set.
+        If True, read from ``/datascope_path/indraX/X_Y_Z/`` (default False).
+        Ignored if `datadir` is set.
     verbose : boolean, optional
         If True, print reading statements (default False).
     
@@ -812,9 +792,9 @@ def getfft(runid,tnum,datadir=None,datascope=False,verbose=False):
     Parameters
     ----------
     runid : int or tuple
-        Specifies the Indra run either as an integer from 0 to 511
+        Specifies the Indra run either as an integer from 128 to 511
         or as a length 3 tuple giving the 3-digit ID as (X,Y,Z)
-        where X, Y, and Z each go from 0 to 7.
+        where `X` goes from 2 to 7 and `Y` and `Z` each go from 0 to 7.
     tnum : int
         Which time step to read (0 to 504).
     datadir : string, optional
@@ -879,9 +859,9 @@ def getkvals(L=128):
     Returns
     -------
     kx, ky, kz : tuple of ndarrays
-        The components of the k-values in the "upper-half sphere" of
-        k-space (kz >= 0). Each array has size [L+1,L+1,L/2+1], the 
-        same as the FFT outputs when ``L=128``.
+        The components of the *k*-values in the "upper-half sphere" of
+        *k*-space (`kz` >= 0). Each array has size ``[L+1,L+1,L/2+1]``, the 
+        same as the FFT outputs when `L`=128.
     """
     # define k's that correspond to fourier modes: (2*np.pi/boxsize)*np.array(x,y,z)
     # x = [-L/2:L/2], y = [-L/2:L/2], z = [0:L/2]

@@ -1,24 +1,6 @@
 indratools package
 ==================
 
-Submodules
-----------
-
-indratools.Shape3D module
--------------------------
-
-.. automodule:: indratools.Shape3D
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-indratools.particlesInShape module
-----------------------------------
-
-.. automodule:: indratools.particlesInShape
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 indratools.read\_indra module
 -----------------------------
@@ -36,11 +18,19 @@ indratools.utils module
    :undoc-members:
    :show-inheritance:
 
+indratools.Shape3D module
+-------------------------
 
-Module contents
----------------
-
-.. automodule:: indratools
+.. automodule:: indratools.Shape3D
    :members:
    :undoc-members:
    :show-inheritance:
+
+indratools.particlesInShape module
+----------------------------------
+
+.. automodule:: indratools.particlesInShape
+   :members:
+   :undoc-members:
+   :show-inheritance:
+

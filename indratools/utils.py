@@ -1,60 +1,6 @@
 """
 Utility functions for the Indra suite of simulations hosted on the SciServer.
 
-Written by Bridget Falck, 2018-2020
-
-
-
-Inputs: 
-- ``snapinput`` is an optional subset of snapshots for which redshifts and scale factors
-    are desired for particle or FFT snapshots.
-- ``runid`` specifies the Indra run, and is ignored if a ``datadir`` is specified; 
-    it is either an integer from 0 to 511 or a tuple containing (``X``,``Y``,``Z``)
-
-
-
-Classes
--------
-
-Run(runid)
-    Define the runnum (if runid is a tuple of (X,Y,Z)) and X, Y, Z values (if runid is an int)
-    that specify this Indra run.
-
-Methods
--------
-
-get_run_num(x,y,z)
-    Helper function to return the raveled run number (0 to 511) from the unraveled
-    x, y, z identifiers (each 0 to 7).
-get_xyz(run_num)
-    Helper function to return the x, y, z identifiers from the run number (0 to 511).
-fdb_snaps(runnum=None,Container=True,Dask=False,DaskLocal=False)
-    Returns snapshots on FileDB: full sets (default), or those in directory of runnum.
-    Optional boolean inputs specify the environment to determine filesystem paths.
-fdb_runs(loc=None,getstring=True,Container=True,Dask=False,DaskLocal=False)
-    Returns Indra runs (as string 'X_Y_Z' (default) or as a runnum) on FileDB: full
-    runs (default) or runs located in FileDB node specified by loc = node_vol, node_num.
-    For example, filedb/data05_01 specified by loc = (5,1).
-    Optional boolean inputs specify the environment to determine filesystem paths.
-fdb_loc(runid)
-    Returns file location of given Indra run on the FileDB data volumes, as 
-    mounted on SciServer Compute containers.
-get_loc(runid,snapnum=None)
-    Determines directory from which to read simulation snapshot file.
-    Defaults to FileDB location for all halo and FFT data, and for all snapshots
-    stored on FileDB. Otherwise it returns the datascope location based on ``ds_basedir``.
-part_snapinfo(snapinput=None)
-    Reads and returns all snapnums, redshifts, and scale factors for all 64 particle 
-    snapshots, or a subset of redshifts and scale factors if snapinput is set.
-FFT_snapinfo(snapinput=None)
-    Reads and returns all snapnums, redshifts, and scale factors for all 505 FFT 
-    snapshots, or a subset of redshifts and scale factors if snapinput is set.
-get_pklin()
-    Reads and returns the k and P(k) values of the CAMB linear power spectrum, 
-    normalized to z=0, for the Indra cosmology.
-cic_pk(snapnum,ngrid=512,nruns=320)
-    Reads and returns the power spectra measured from CIC interpolation of
-    the particle positions of multiple runs and one snapshot.
 
 """
 
@@ -67,12 +13,12 @@ ds_basedir = '/home/idies/workspace/indra_dss/'
 
 
 def get_run_num(x,y,z):
-    '''Helper function to figure out raveled index from unraveled index.
+    '''Helper function to figure out raveled index from unraveled identifiers.
 
     Parameters
     ----------
-    x, y, z : int
-        The integers specifying run x_y_z, each from 0 to 7
+    (x,y,z) : int
+        The integers specifying run ``X_Y_Z``, each from 0 to 7
 
     Returns
     -------
@@ -94,7 +40,7 @@ def get_xyz(run_num):
     Returns
     -------
     x, y, z : ints
-        Integers from 0 to 7 identifying run x_y_z
+        Integers from 0 to 7 identifying run ``X_Y_Z``
     '''
 #    return run_num//64, run_num//8 % 8, run_num % 8
     return np.unravel_index(run_num,(8,8,8))
@@ -103,31 +49,33 @@ def get_xyz(run_num):
 class Run:
     """
     Specifies the current Indra simulation as both a number (from 128 to 511) 
-    and 3 integers, X_Y_Z (each from 0 to 7), corresponding to the 
+    and 3 integers, ``X_Y_Z`` (each from 0 to 7), corresponding to the 
     raveled and unraveled indices of an 8x8x8 cube. Instantiated with either
     the number or the 3 integers as a tuple.
+    
+    Parameters
+    ----------
+    runid : int or tuple
+        Specifies the Indra run either as an integer from 128 to 511
+        or as a length 3 tuple giving the 3-digit ID as (`X`,`Y`,`Z`)
+        where `X` goes from 2 to 7 and `Y` and `Z` each go from 0 to 7.
     
     Attributes
     ----------
     num : int
         The ID of the run as an integer, from 128 to 511
     X : int
-        The first integer of run X_Y_Z, from 2 to 7
+        The first integer of run ``X_Y_Z``, from 2 to 7
     Y : int
-        The second integer of run X_Y_Z, from 0 to 7
+        The second integer of run ``X_Y_Z``, from 0 to 7
     Z : int
-        The third integer of run X_Y_Z, from 0 to 7
+        The third integer of run ``X_Y_Z``, from 0 to 7
 
     """
 
     def __init__(self, runid):
         """
-        Parameters
-        ----------
-        runid : int or tuple
-            Specifies the Indra run either as an integer from 0 to 511
-            or as a length 3 tuple giving the 3-digit ID as (X,Y,Z)
-            where X, Y, and Z each go from 0 to 7.
+
         """
         if isinstance(runid, int) or isinstance(runid, np.integer):
             self.num = runid
@@ -142,16 +90,16 @@ class Run:
 
     
 def fdb_snaps(runid=None,Container=True,Dask=False,DaskLocal=False):
-    """Return list of snapshots on FileDB by running glob on the filesystem, either
-    for a specific run given by runnum, or return list of the full sets of snapshots
-    that are on FileDB (for every run).
+    """Return list of snapshots on FileDB by running glob on the filesystem. If `runid` 
+    is not set, return list of the full sets of snapshots that are on FileDB for every run. 
+    Optional boolean inputs specify the environment to determine filesystem paths.
     
     Parameters
     ----------
     runid : int or tuple (default None)
-        Specifies the Indra run either as an integer from 0 to 511
-        or as a length 3 tuple giving the 3-digit ID as (X,Y,Z)
-        where X, Y, and Z each go from 0 to 7.
+        Specifies the Indra run either as an integer from 128 to 511
+        or as a length 3 tuple giving the 3-digit ID as (`X`,`Y`,`Z`)
+        where `X` goes from 2 to 7 and `Y` and `Z` each go from 0 to 7.
     Container : boolean (default True)
         Check filesystem as mounted on a Compute container.
     Dask : boolean (default False)
@@ -200,17 +148,19 @@ def fdb_snaps(runid=None,Container=True,Dask=False,DaskLocal=False):
 
 def fdb_runs(loc=None,getstring=True,Container=True,Dask=False,DaskLocal=False):
     """Returns list of full runs (containing all snapshots) on FileDB.
-    If loc is set, return list of runs at that FileDB location (one of 36 volumes).
+    If `loc` is set, return list of runs at that FileDB location (one of 36 volumes).
+    Optional boolean inputs specify the environment to determine filesystem paths.
+    For example, ``filedb/data05_01`` is specified by `loc` = (5,1).
     
     Parameters
     ----------
     loc : (node_volume, node_number) (optional)
         Tuple that identifies one of the 36 FileDB locations, where 
-        node_volume is an int from 1 to 12, node_number an int from 1 to 3.
+        `node_volume` is an int from 1 to 12, `node_number` an int from 1 to 3.
         If set, return list of runs at that location. If not, return list
         of full runs (containing every snapshot) on FileDB.
     getstring : boolean (default True)
-        If True, return runs as string identifiers ('X_Y_Z').
+        If True, return runs as string identifiers (``X_Y_Z``).
         If False, return as list of integers.
     Container : boolean (default True)
         Check filesystem as mounted on a Compute container.
@@ -223,7 +173,7 @@ def fdb_runs(loc=None,getstring=True,Container=True,Dask=False,DaskLocal=False):
     Returns
     -------
     list
-        Sorted list of string run identifiers ('X_Y_Z') or integer run numbers.
+        Sorted list of string run identifiers (``X_Y_Z``) or integer run numbers.
     """
 
     if (Dask or DaskLocal):
@@ -267,14 +217,14 @@ def fdb_loc(runid):
     Parameters
     ----------
     runid : int or tuple
-        Specifies the Indra run either as an integer from 0 to 511
-        or as a length 3 tuple giving the 3-digit ID as (X,Y,Z)
-        where X, Y, and Z each go from 0 to 7.
+        Specifies the Indra run either as an integer from 128 to 511
+        or as a length 3 tuple giving the 3-digit ID as (`X`,`Y`,`Z`)
+        where `X` goes from 2 to 7 and `Y` and `Z` each go from 0 to 7.
     
     Returns
     -------
     filename : string
-        Full path of the directory containing the run specified by runid.
+        Full path of the directory containing the run specified by `runid`.
     """
 
     run = Run(runid)
@@ -296,24 +246,24 @@ def get_loc(runid,snapnum=None):
     SciServer compute containers.
     
     If snapnum is not provided, returns FileDB location of input run. Otherwise, checks
-    whether provided runid and snapnum are on FileDB. If not, returns the DataScope 
-    location based on ``ds_basedir``, a global parameter here and in read_indra.py.
+    whether provided `runid` and `snapnum` are on FileDB. If not, returns the DataScope 
+    location based on `ds_basedir`, a global parameter here and in ``read_indra.py``.
     Thus it returns the FileDB location for all halo catalogs and FFT data and for 
     all snapshots that are stored on FileDB.
     
     Parameters
     ----------
     runid : int or tuple
-        Specifies the Indra run either as an integer from 0 to 511
-        or as a length 3 tuple giving the 3-digit ID as (X,Y,Z)
-        where X, Y, and Z each go from 0 to 7.
+        Specifies the Indra run either as an integer from 128 to 511
+        or as a length 3 tuple giving the 3-digit ID as (`X`,`Y`,`Z`)
+        where `X` goes from 2 to 7 and `Y` and `Z` each go from 0 to 7.
     snapnum : int (optional)
         Only required to determine location of snapshot files.
 
     Returns
     -------
     filename : string
-        Full path of the directory containing the run specified by runid.
+        Full path of the directory containing the run specified by `runid`.
     """
 
     if snapnum is None:
@@ -328,7 +278,7 @@ def get_loc(runid,snapnum=None):
 
 def part_snapinfo(snapinput=None):
     """Reads and returns all snapnums, redshifts, and scale factors for all 64 particle
-    snapshots, or a subset of redshifts and scale factors if snapinput is set.
+    snapshots, or a subset of redshifts and scale factors if `snapinput` is set.
     
     Parameters
     ----------
@@ -353,7 +303,7 @@ def part_snapinfo(snapinput=None):
     
 def FFT_snapinfo(snapinput=None):
     """Reads and returns all snapnums, redshifts, and scale factors for all 505 FFT
-    snapshots, or a subset of redshifts and scale factors if snapinput is set.
+    snapshots, or a subset of redshifts and scale factors if `snapinput` is set.
     
     Parameters
     ----------
@@ -377,8 +327,8 @@ def FFT_snapinfo(snapinput=None):
 
 
 def get_pklin():
-    """Reads and returns the k and P(k) values of the CAMB linear power spectrum, 
-    normalized to z=0, for the Indra cosmology.
+    """Reads and returns the *k* and *P(k)* values of the CAMB linear power spectrum, 
+    normalized to *z*=0, for the Indra cosmology.
     
     Returns
     -------
@@ -399,17 +349,17 @@ def cic_pk(snapnum,ngrid=512,nruns=320):
     Parameters
     ----------
     snapnum : int
-        snapshot number
+        Snapshot number
     ngrid : int (default 512)
-        number of grid cells used for CIC interpolation (determines Nyquist frequency)
+        Number of grid cells used for CIC interpolation (determines Nyquist frequency)
     nruns : int (default 320)
-        number of Indra runs included (e.g. 320 is for runs 128 to 447)
+        Number of Indra runs included (e.g. 320 is for runs 128 to 447)
     
     Returns
     -------
-    dict of {'k': ndarray, 'ps' : ndarray, 'poisson' : ndarray}
-        'k' is a 1-d array of bin values, 'ps' is a [len(k),nruns] array of P(k) values,
-        and 'poisson' is a 1-d array of 1/sqrt(N) for N counts in each bin.
+    dictionary
+        `k` is a 1-d array of bin values, `ps` is a ``[len(k),nruns]`` array of *P(k)* values,
+        and `poisson` is a 1-d array of :math:`1/\sqrt(N)` for *N* counts in each bin.
     """
     
     basedir = '/home/idies/workspace/indra/pk/' 
