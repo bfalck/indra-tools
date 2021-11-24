@@ -3,4 +3,4 @@ from .utils import *
 from .Shape3D import *
 from .particlesInShape import *
 
-__version__ = '1.2dev2'
+__version__ = '1.2.2'
