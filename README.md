@@ -13,7 +13,9 @@ The Indra relational database contains:
 - Spatial3D library to allow efficient selection of halos and particle data within 3-dimensional shapes
 
 ## Getting Started
-To access Indra, create an account on [SciServer](http://www.sciserver.org) and join the *Cosmological Simulations* Science Domain. Then, from the SciServer *Dashboard*, navigate to *Compute* and create a container: select the *Cosmological Simulations* compute image and mount all three Indra *Data Volumes*. 
+To access Indra, create an account on [SciServer](http://www.sciserver.org) and join the *Cosmological Simulations* Science Domain. Information about using SciServer, including how to [join the Science Domain](https://www.sciserver.org/integration/), is available on the [help](https://www.sciserver.org/support/) pages. 
+
+Then, from the SciServer *Dashboard*, navigate to *Compute* and create a container: select the *Cosmological Simulations* compute image and mount all three Indra *Data Volumes*. 
 
 The *Cosmological Simulations* compute image comes with this library pre-installed plus all software on the default *SciServer Essentials* image. 
 
@@ -29,7 +31,7 @@ Example notebooks are provided that demonstrate how to:
 - compute density fields: `density_field_examples.ipynb`
 - selectively (and efficiently) read particles in 3-dimensional shapes such as a sphere, box, or cone: `Shape3D_examples.ipynb`
 
-These notebooks can be found in the main *Indra* data volume from within a compute container. Copy them to your *persistent* home directory to use and edit. 
+These notebooks can be found in the main *Indra* data volume (`/home/idies/workspace/indra/`) from within a compute container. Copy them to your *persistent* home directory to use and edit. 
 
 
 ## Reference
